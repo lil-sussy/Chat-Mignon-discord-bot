@@ -94,7 +94,7 @@ export default {
 
     // Send the message with both buttons
     await ticketChannel.send({
-      content: `@moderators, please look into this report!\n` +
+      content: `@${config.moderatorRoleName}, please look into this report!\n` +
                `• Reporter: ${interaction.user}\n` +
                `• Reported user: ${reportedUser}\n` +
                `• Description: ${description}`,
@@ -149,10 +149,8 @@ export default {
 
         // Notify moderators in the new ticket channel
         await newTicketChannel.send({
-          content: `@moderators, a new ticket has been created regarding ${reportedUser}.\n` +
-                   `• Reporter: ${interaction.user}\n` +
-                   `• Reported user: ${reportedUser}\n` +
-                   `• Description: ${description}`,
+          content: `@${config.moderatorRoleName}, a new ticket has been created regarding ${reportedUser}.\n` +
+                   `• Reported user: ${reportedUser}\n`
         });
 
         await i.reply({ content: `A new ticket channel has been created: ${newTicketChannel}`, ephemeral: true });
