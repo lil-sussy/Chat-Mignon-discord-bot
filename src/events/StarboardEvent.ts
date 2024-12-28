@@ -16,7 +16,9 @@ const StarboardEvent: Event = {
     reaction: MessageReaction | PartialMessageReaction,
     user: User | PartialUser
   ) {
+    console.log("Starboard event triggered:", reaction, user);
     // If it's not a star (⭐), ignore
+    console.log(reaction);
     if (reaction.emoji.name !== "⭐") return;
 
     // Ensure the message is fetched if partial

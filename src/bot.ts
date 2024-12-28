@@ -1,4 +1,4 @@
-import { DiscordjsError, GatewayIntentBits as Intents, Partials } from 'discord.js';
+import { DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser } from 'discord.js';
 import ExtendedClient from './classes/Client';
 import { config } from 'dotenv';
 import StarboardEvent from "./events/StarboardEvent";
@@ -15,6 +15,7 @@ const client = new ExtendedClient({
         Intents.GuildMessages,
         Intents.MessageContent,
         Intents.GuildMembers,
+        Intents.GuildMessageReactions,
     ],
     partials: [
         Partials.Message,
@@ -25,6 +26,11 @@ const client = new ExtendedClient({
 });
 
 client.login(process.env.TOKEN)
+    .then(() => {
+        // Call main function after successful login
+        main().then(() => {
+        })
+    })
     .catch((err: unknown) => {
         if (err instanceof DiscordjsError) {
             if (err.code === "TokenMissing") {
@@ -41,8 +47,21 @@ async function main() {
 	// Register the starboard event
 	client.events.set(StarboardEvent.name, StarboardEvent);
 
-	// Register the starboard slash command
-	client.commands.set(StarboardCommand.options.name, StarboardCommand);
-}
+	// Add event listener for messageReactionAdd
+	client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
+		// Ensure the user is not a bot
+		if (user.bot) return;
 
-main();
+		// Fetch the reaction if it's partial
+		if (reaction.partial) {
+			try {
+				await reaction.fetch();
+			} catch (error) {
+				console.error('Error fetching reaction:', error);
+				return;
+			}
+		}
+
+		await StarboardEvent.execute(client, reaction, user);
+	});
+}
