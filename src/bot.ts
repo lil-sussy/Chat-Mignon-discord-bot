@@ -96,7 +96,11 @@ async function main() {
 	const switchActivity = () => {
 		const activities = [
 			{ name: "/report", type: ActivityType.Listening },
-			{ name: "with your subby asses", type: ActivityType.Playing }
+			{ name: "with your subby asses", type: ActivityType.Playing },
+			{ name: "/report", type: ActivityType.Listening },
+			{ name: "porn content 🔞 for fun", type: ActivityType.Streaming },
+			{ name: "/report", type: ActivityType.Listening },
+			{ name: "catgirl vtuber content", type: ActivityType.Streaming },
 		];
 
 		let index = 0;
