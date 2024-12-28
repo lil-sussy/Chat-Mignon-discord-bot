@@ -15,6 +15,7 @@ import {
 } from "discord.js";
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces/Command";
+import config from '../config.json'; // Adjust the path as necessary
 
 export default {
   options: new SlashCommandBuilder()
@@ -105,7 +106,7 @@ export default {
       i.isButton() && // Check if the interaction is a button
       i.customId === 'delete_ticket' && 
       i.member instanceof GuildMember && // Ensure member is a GuildMember
-      i.member.roles.cache.some(role => role.name === 'moderator');
+      i.member.roles.cache.some(role => role.name === config.moderatorRoleName);
 
     const collector = ticketChannel.createMessageComponentCollector<MessageComponentType>({ filter, time: 60000 });
 

@@ -12,8 +12,10 @@
     },
     "restVersion": "10",
     "moderatorCategoryId": "1322068979790909512",
+    "moderatorRoleName": "moderators",
     "starboard": {
-      "channelId": "",
-      "threshold": 3
-    }
+      "channelId": "1322670041342279781",
+      "threshold": 1
+    },
+    "updateChannelId": "1316674930678431774"
 }

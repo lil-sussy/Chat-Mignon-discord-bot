@@ -51,6 +51,8 @@ interface Config {
 		channelId: string; // ID of the starboard channel
 		threshold: number; // Number of stars required to star a message
 	};
+	moderatorRoleName: string;
+  updateChannelId: string;
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client
