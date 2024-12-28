@@ -1,4 +1,4 @@
-import { DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser } from 'discord.js';
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser } from 'discord.js';
 import ExtendedClient from './classes/Client';
 import { config } from 'dotenv';
 import StarboardEvent from "./events/StarboardEvent";
@@ -91,4 +91,20 @@ async function main() {
 
 		await StarboardEvent.execute(client, reaction, user);
 	});
+
+	// Function to switch activity
+	const switchActivity = () => {
+		const activities = [
+			{ name: "listening to /report", type: ActivityType.Listening },
+			{ name: "playing with your asses", type: ActivityType.Playing }
+		];
+
+		let index = 0;
+		setInterval(() => {
+			client.user?.setActivity(activities[index]);
+			index = (index + 1) % activities.length; // Cycle through activities
+		}, 10000); // Switch every 10 seconds
+	};
+
+	switchActivity(); // Start switching activities
 }
