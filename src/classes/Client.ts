@@ -46,6 +46,10 @@ interface Config {
         embed: ColorResolvable;
     };
     restVersion: "10";
+    starboard: {
+        channelId: string; // ID of the starboard channel
+        threshold: number; // Number of stars required to star a message
+    };
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client

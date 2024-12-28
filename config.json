@@ -1,0 +1,12 @@
+{
+  "guild": "1312847544547807332",
+  "receiveMessageComponents": true,
+  "receiveModals": true,
+  "replyOnError": true,
+  "splitCustomId": false,
+  "useGuildCommands": true,
+  "starboard": {
+    "channelId": "",
+    "threshold": 3
+  }
+}
