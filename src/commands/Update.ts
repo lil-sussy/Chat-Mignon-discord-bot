@@ -2,6 +2,33 @@ import { ChatInputCommandInteraction, Role, SlashCommandBuilder } from "discord.
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces";
 
+const catEmojis = [
+	"<( ⸝⸝•̀ - •́⸝⸝)>",
+	"/ᐠ - ˕ -マ",
+	"˶^•ﻌ•^˵",
+	"૮₍˶ •. • ⑅₎ა ♡",
+	"/ᐠ>ヮ<ᐟ\\ฅ",
+	"(づ ᴗ _ᴗ)づ♡",
+	"/ᐠ_ ꞈ _ᐟ\\ɴʏᴀ~",
+	"ᨐᵐᵉᵒʷ",
+	"(⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+	"(๑`^´๑)︻デ═一",
+	"( -_•)︻デ═一",
+	"( ︶︿︶)_╭∩╮",
+	"𝗖𝗘𝗢 𝗢𝗙 𝗢𝗛𝗜𝗢",
+	"(◍•ᴗ•◍)",
+	"( ͜. ㅅ ͜. )🥛 yumy",
+	"( ๑ ˃̵ᴗ˂˵)و ♡",
+	"(˵ • ᴗ - ˵ ) ✧",
+	"₍˄·͈༝·͈˄*₎◞ ̑̑",
+	"≽^•⩊•^≼",
+	"ᓚ₍ ^. ̫ .^₎",
+	"ദ്ദി（• ˕ •マ.ᐟ",
+	"⎛⎝ ≽  >  ⩊   < ≼ ⎠⎞",
+	"(づ˶•༝•˶)づ♡",
+	"(˶˃ᆺ˂˶)"
+];
+
 const command: ChatInputCommand = {
 	options: new SlashCommandBuilder()
 		.setName("update")
@@ -35,6 +62,13 @@ const command: ChatInputCommand = {
 
 		// Get the message content and channel from config
 		const message = interaction.options.getString("message", true);
+
+		// Replace every \cat\ with a random cat emoji
+		const pattern = /\\cat\\/g;
+		const updatedMessage = message.replace(pattern, () => {
+			return catEmojis[Math.floor(Math.random() * catEmojis.length)];
+		});
+
 		const updateChannelId = client.config.updateChannelId;
 		const updateChannel = interaction.guild?.channels.cache.get(updateChannelId);
 
@@ -47,7 +81,7 @@ const command: ChatInputCommand = {
 		}
 
 		// Send the update message to the specified channel
-		await updateChannel.send(message);
+		await updateChannel.send(updatedMessage);
 		await interaction.reply({
 			content: "Your message has been posted to the update channel!",
 			ephemeral: true,
