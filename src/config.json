@@ -1,5 +1,5 @@
 {
-    "guild": "your_guild_id",
+    "guild": "1312847544547807332",
     "interactions": {
         "receiveMessageComponents": true,
         "receiveModals": true,
@@ -10,5 +10,10 @@
     "colors": {
         "embed": "#2f3136"
     },
-    "restVersion": "10"
+    "restVersion": "10",
+    "moderatorCategoryId": "1322068979790909512",
+    "starboard": {
+      "channelId": "",
+      "threshold": 3
+    }
 }

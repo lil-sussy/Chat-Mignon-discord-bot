@@ -5,6 +5,7 @@
   "replyOnError": true,
   "splitCustomId": false,
   "useGuildCommands": true,
+  "moderatorCategoryId": "1322068979790909512",
   "starboard": {
     "channelId": "",
     "threshold": 3

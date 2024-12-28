@@ -40,7 +40,7 @@ const StarboardCommand: ChatInputCommand = {
         .setDescription("View current starboard settings")
     ) as SlashCommandBuilder,
 
-  global: false, // or true, depending on your usage
+  global: false, // Ensure this is false for guild commands
 
   async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();

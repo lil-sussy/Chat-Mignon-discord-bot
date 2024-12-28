@@ -34,22 +34,23 @@ try {
  * Type Definitions for config
  */
 interface Config {
-    guild: Snowflake | "your_guild_id";
-    interactions: {
-        receiveMessageComponents: boolean;
-        receiveModals: boolean;
-        replyOnError: boolean;
-        splitCustomId: boolean;
-        useGuildCommands: boolean;
-    };
-    colors: {
-        embed: ColorResolvable;
-    };
-    restVersion: "10";
-    starboard: {
-        channelId: string; // ID of the starboard channel
-        threshold: number; // Number of stars required to star a message
-    };
+	guild: Snowflake;
+	interactions: {
+		receiveMessageComponents: boolean;
+		receiveModals: boolean;
+		replyOnError: boolean;
+		splitCustomId: boolean;
+		useGuildCommands: boolean;
+	};
+	colors: {
+		embed: ColorResolvable;
+	};
+	restVersion: "10";
+	moderatorCategoryId: string;
+	starboard: {
+		channelId: string; // ID of the starboard channel
+		threshold: number; // Number of stars required to star a message
+	};
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client
