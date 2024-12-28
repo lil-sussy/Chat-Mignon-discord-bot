@@ -106,12 +106,30 @@ async function main() {
 		let index = 0;
 		setInterval(() => {
 			const activity = activities[index];
-			client.user?.setPresence({
-				status: activity.status as PresenceStatusData,
-				activities: [{ name: activity.name, type: activity.type }],
-			});
-			index = (index + 1) % activities.length; // Cycle through activities
-		}, 10000); // Switch every 10 seconds
+
+			if (activity.status === "dnd") {
+				client.user?.setPresence({
+					status: 'dnd',
+					activities: [{
+						name: activity.name,
+						type: ActivityType.Streaming,
+						url: "https://www.twitch.tv/lilsussyjett"
+					}],
+				});
+			} else if (activity.status === "idle") {
+				client.user?.setPresence({
+					status: 'idle',
+					activities: [{ name: activity.name, type: activity.type }],
+				});
+			} else {
+				client.user?.setPresence({
+					status: 'online',
+					activities: [{ name: activity.name, type: activity.type }],
+				});
+			}
+
+			index = (index + 1) % activities.length;
+		}, 10000);
 	};
 
 	switchActivity(); // Start switching activities
