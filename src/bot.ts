@@ -95,8 +95,8 @@ async function main() {
 	// Function to switch activity
 	const switchActivity = () => {
 		const activities = [
-			{ name: "listening to /report", type: ActivityType.Listening },
-			{ name: "playing with your asses", type: ActivityType.Playing }
+			{ name: "to /report", type: ActivityType.Listening },
+			{ name: "with your subby asses", type: ActivityType.Playing }
 		];
 
 		let index = 0;
