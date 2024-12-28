@@ -1,4 +1,4 @@
-import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser } from 'discord.js';
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData } from 'discord.js';
 import ExtendedClient from './classes/Client';
 import { config } from 'dotenv';
 import StarboardEvent from "./events/StarboardEvent";
@@ -95,17 +95,21 @@ async function main() {
 	// Function to switch activity
 	const switchActivity = () => {
 		const activities = [
-			{ name: "/report", type: ActivityType.Listening },
-			{ name: "with your subby asses", type: ActivityType.Playing },
-			{ name: "/report", type: ActivityType.Listening },
-			{ name: "porn content 🔞 for fun", type: ActivityType.Streaming },
-			{ name: "/report", type: ActivityType.Listening },
-			{ name: "catgirl vtuber content", type: ActivityType.Streaming },
+			{ name: "/report", type: ActivityType.Listening, status: "online" },
+			{ name: "with your subby asses", type: ActivityType.Playing, status: "idle" },
+			{ name: "/report", type: ActivityType.Listening, status: "online" },
+			{ name: "porn content 🔞 for fun", type: ActivityType.Streaming, status: "dnd" },
+			{ name: "/report", type: ActivityType.Listening, status: "online" },
+			{ name: "catgirl vtuber content", type: ActivityType.Streaming, status: "dnd" },
 		];
 
 		let index = 0;
 		setInterval(() => {
-			client.user?.setActivity(activities[index]);
+			const activity = activities[index];
+			client.user?.setPresence({
+				status: activity.status as PresenceStatusData,
+				activities: [{ name: activity.name, type: activity.type }],
+			});
 			index = (index + 1) % activities.length; // Cycle through activities
 		}, 10000); // Switch every 10 seconds
 	};
