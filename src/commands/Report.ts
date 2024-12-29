@@ -153,7 +153,42 @@ export default {
                    `• Reported user: ${reportedUser}\n`
         });
 
-        await i.reply({ content: `A new ticket channel has been created: ${newTicketChannel}`, ephemeral: true });
+        // Create a button for deleting the newly created ticket
+        const deleteNewTicketButton = new ButtonBuilder()
+          .setCustomId('delete_new_ticket')
+          .setLabel('Delete Ticket')
+          .setStyle(ButtonStyle.Danger);
+
+        // Add the new button to an action row
+        const newActionRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(deleteNewTicketButton);
+
+        // Send a message in the new ticket channel that includes the Delete Ticket button
+        await newTicketChannel.send({
+          content: `@${config.moderatorRoleName}, a new ticket has been created regarding ${reportedUser}.\n` +
+                   `• Reported user: ${reportedUser}\n`,
+          components: [newActionRow],
+        });
+
+        // Create a new collector for the newly created channel
+        const newFilter = (btnInteraction: MessageComponentInteraction) =>
+          btnInteraction.isButton() &&
+          btnInteraction.customId === 'delete_new_ticket' &&
+          btnInteraction.member instanceof GuildMember &&
+          btnInteraction.member.roles.cache.some(
+            (role) => role.name === config.moderatorRoleName
+          );
+
+        const newCollector = newTicketChannel.createMessageComponentCollector({
+          filter: newFilter,
+          time: 600000, // 10 minutes
+        });
+
+        // Delete the new ticket channel if the button is pressed by a moderator
+        newCollector.on('collect', async (btnInteraction: ButtonInteraction) => {
+          await newTicketChannel.delete();
+          await btnInteraction.reply({ content: 'New ticket channel has been deleted.', ephemeral: true });
+        });
       }
     });
 
