@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { Event } from "../interfaces/Event";
 import ExtendedClient from "../classes/Client";
+import StarboardSetting from "../models/StarboardSetting";
 
 const StarboardEvent: Event = {
   name: "messageReactionAdd",
@@ -21,12 +22,17 @@ const StarboardEvent: Event = {
     // Ensure the message is fetched if partial
     if (reaction.message.partial) await reaction.message.fetch();
 
-    const { channelId, threshold } = client.config.starboard;
-    if (!channelId || !threshold) return;
+    // Check for existing starboard settings
+    let starboardDoc = await StarboardSetting.findOne({});
+    if (!starboardDoc) {
+        // Create a new document with a default threshold of 3
+        starboardDoc = await StarboardSetting.create({ threshold: 3 });
+    }
+    const { threshold } = starboardDoc;
 
     // If reaction count meets or exceeds threshold, post/update in starboard channel
     if (reaction.count && reaction.count >= threshold) {
-      const starboardChannel = client.channels.cache.get(channelId) as TextChannel;
+      const starboardChannel = client.channels.cache.get(client.config.starboard.channelId) as TextChannel;
       if (!starboardChannel) return;
 
       const fetchedMsg = reaction.message;

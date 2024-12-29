@@ -1,10 +1,12 @@
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
-  TextChannel
+  TextChannel,
+  Role
 } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import ExtendedClient from "../classes/Client";
+import StarboardSetting from "../models/StarboardSetting";
 
 // ... existing imports (if any) ...
 
@@ -43,6 +45,28 @@ const StarboardCommand: ChatInputCommand = {
   global: false, // Ensure this is false for guild commands
 
   async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
+    // Check if the user has the moderator role
+    const roleName = client.config.moderatorRoleName;
+    const moderatorRole: Role | undefined = interaction.guild?.roles.cache.find((r) => r.name === roleName);
+
+    if (!moderatorRole) {
+        await interaction.reply({
+            content: `Moderator role "${roleName}" not found in this server.`,
+            ephemeral: true,
+        });
+        return;
+    }
+
+    // @ts-expect-error "roles" type on member can be narrower but typically includes "cache"
+    const memberRoles = interaction.member?.roles?.cache;
+    if (!memberRoles || !memberRoles.has(moderatorRole.id)) {
+        await interaction.reply({
+            content: "You do not have permission to use this command.",
+            ephemeral: true,
+        });
+        return;
+    }
+
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {
@@ -59,22 +83,35 @@ const StarboardCommand: ChatInputCommand = {
         // Update config in-memory and possibly persist to file
         client.config.starboard.channelId = channel.id;
 
-        await interaction.reply(`Starboard channel set to <#${channel.id}>.`);
+        await interaction.reply({
+          content: `Starboard channel set to <#${channel.id}>.`,
+          ephemeral: true
+        });
         break;
       }
       case "setthreshold": {
         const threshold = interaction.options.getInteger("threshold", true);
-        client.config.starboard.threshold = threshold;
-
-        await interaction.reply(`Star threshold set to **${threshold}**.`);
+        // Save threshold to Mongo
+        await StarboardSetting.findOneAndUpdate(
+            {}, 
+            { threshold }, 
+            { upsert: true, new: true }
+        );
+        await interaction.reply({
+          content: `Star threshold set to **${threshold}**.`,
+          ephemeral: true
+        });
         break;
       }
       case "view": {
-        const { channelId, threshold } = client.config.starboard;
-        await interaction.reply(
-          `• **Channel**: <#${channelId || "Not set"}>\n` +
-          `• **Threshold**: ${threshold}`
-        );
+        // Get threshold from Mongo
+        const doc = await StarboardSetting.findOne({});
+        const threshold = doc?.threshold ?? 0;
+        const channelId = client.config.starboard.channelId; // Channel still in config, or also store in DB if desired
+        await interaction.reply({
+          content: `• **Channel**: <#${channelId || "Not set"}>\n• **Threshold**: ${threshold}`,
+          ephemeral: true
+        });
         break;
       }
     }

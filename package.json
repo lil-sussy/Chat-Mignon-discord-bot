@@ -27,7 +27,8 @@
 	"dependencies": {
 		"@fluent/bundle": "^0.17.1",
 		"discord.js": "^14.16.2",
-		"dotenv": "^16.0.3"
+		"dotenv": "^16.0.3",
+		"mongoose": "^8.9.2"
 	},
 	"devDependencies": {
 		"@types/node": "^18.11.11",

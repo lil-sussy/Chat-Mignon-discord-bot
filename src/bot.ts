@@ -3,6 +3,9 @@ import ExtendedClient from './classes/Client';
 import { config } from 'dotenv';
 import StarboardEvent from "./events/StarboardEvent";
 import StarboardCommand from "./commands/Starboard";
+import mongoose from 'mongoose';
+import StarboardSetting from './models/StarboardSetting';
+import Confession from './models/Confession'; // for storing confessions
 
 // Load .env file contents
 config();
@@ -26,10 +29,13 @@ const client = new ExtendedClient({
 });
 
 client.login(process.env.TOKEN)
-    .then(() => {
-        // Call main function after successful login
+    .then(async () => {
+        // Connect to MongoDB using .env credentials
+        await mongoose.connect(process.env.MONGO_PUBLIC_URL || "mongodb://junction.proxy.rlwy.net:47924");
+
+        // Call main function after successful login & DB connection
         main().then(() => {
-        })
+        });
     })
     .catch((err: unknown) => {
         if (err instanceof DiscordjsError) {
@@ -45,25 +51,25 @@ client.login(process.env.TOKEN)
 
 async function main() {
 	// Register the starboard event
-	client.events.set(StarboardEvent.name, StarboardEvent);
+	// client.events.set(StarboardEvent.name, StarboardEvent);
 
 	// Add event listener for messageReactionAdd
-	// client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
-	// 	// Ensure the user is not a bot
-	// 	if (user.bot) return;
+	client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
+		// Ensure the user is not a bot
+		if (user.bot) return;
 
-	// 	// Fetch the reaction if it's partial
-	// 	if (reaction.partial) {
-	// 		try {
-	// 			await reaction.fetch();
-	// 		} catch (error) {
-	// 			console.error('Error fetching reaction:', error);
-	// 			return;
-	// 		}
-	// 	}
+		// Fetch the reaction if it's partial
+		if (reaction.partial) {
+			try {
+				await reaction.fetch();
+			} catch (error) {
+				console.error('Error fetching reaction:', error);
+				return;
+			}
+		}
 
-	// 	await StarboardEvent.execute(client, reaction, user);
-	// });
+		await StarboardEvent.execute(client, reaction, user);
+	});
 
 	// Function to switch activity
 	const switchActivity = () => {
