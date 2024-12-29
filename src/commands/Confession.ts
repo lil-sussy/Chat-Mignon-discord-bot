@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, GuildMember } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, GuildMember, TextChannel } from "discord.js";
 import crypto from "crypto";
 import Confession from "../models/Confession";
 import ExtendedClient from "../classes/Client";
@@ -27,8 +27,10 @@ export default {
 
 		// Get the first letter of the user's nickname or username
 		const member = interaction.member as GuildMember;
-		const userDisplayName = member.nickname || interaction.user.username;
-		const firstLetter = userDisplayName.match(/[A-Z]/) ? userDisplayName.match(/[A-Z]/)![0] : userDisplayName.match(/[a-zA-Z0-9]/)![0];
+		const userDisplayName = member.nickname || interaction.user.globalName || interaction.user.username;
+		const capitalMatch = userDisplayName.match(/[A-Z]/);
+		const alphaNumMatch = userDisplayName.match(/[a-zA-Z0-9]/);
+		const firstLetter = capitalMatch ? capitalMatch[0] : alphaNumMatch ? alphaNumMatch[0] : "";
 
 		// Pull and increment the channel's color index
 		const confessionSetting = await ConfessionSetting.findOneAndUpdate(
@@ -46,18 +48,29 @@ export default {
 			.setDescription(whisperText)
 			.setColor(color);
 
-		// Send the whisper & log in DB
-		const sentMessage = await interaction.reply({
-			embeds: [embed],
-			fetchReply: true,
-		});
+		// Defer the reply
+		await interaction.deferReply({ ephemeral: true });
 
-		// Store the whisper content and message in the database
-		await Confession.create({
-			confessionId: crypto.randomUUID(),
-			creatorHash: userIdHash,
-			content: whisperText,
-			messageId: sentMessage.id,
-		});
+		// Ensure the channel is a TextChannel before sending the message
+		if (interaction.channel instanceof TextChannel) {
+			// Then send the embed as a separate message visible to everyone, without mentioning the user who triggered the slash command
+			const sentMessage = await interaction.channel.send({
+				embeds: [embed],
+			});
+
+			// Store the whisper content and message in the database
+			await Confession.create({
+				confessionId: crypto.randomUUID(),
+				creatorHash: userIdHash,
+				content: whisperText,
+				messageId: sentMessage.id,
+				channelId: interaction.channelId,
+			});
+
+			// Finally, edit the deferred reply so the "is thinking..." disappears
+			await interaction.editReply({ content: 'Your whisper has been posted!' });
+		} else {
+			console.error("The channel is not a TextChannel.");
+		}
 	},
 }; 
