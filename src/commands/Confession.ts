@@ -3,7 +3,7 @@ import crypto from "crypto";
 import Confession from "../models/Confession";
 
 export default {
-  data: new SlashCommandBuilder()
+  options: new SlashCommandBuilder()
     .setName("confess")
     .setDescription("Make an anonymous confession in the current channel")
     .addStringOption((option) =>
