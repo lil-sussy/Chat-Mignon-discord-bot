@@ -49,10 +49,11 @@ interface Config {
 	moderatorCategoryId: string;
 	starboard: {
 		channelId: string; // ID of the starboard channel
+		emoji: string;
 		threshold: number; // Number of stars required to star a message
 	};
 	moderatorRoleName: string;
-  updateChannelId: string;
+	updateChannelId: string;
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client

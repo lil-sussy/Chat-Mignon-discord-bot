@@ -17,7 +17,7 @@ const StarboardEvent: Event = {
     reaction: MessageReaction | PartialMessageReaction,
     user: User | PartialUser
   ) {
-    if (reaction.emoji.name !== "⭐") return;
+    if (reaction.emoji.name !== client.config.starboard.emoji) return;
 
     // Ensure the message is fetched if partial
     if (reaction.message.partial) await reaction.message.fetch();
@@ -38,15 +38,15 @@ const StarboardEvent: Event = {
       const fetchedMsg = reaction.message;
       // Construct starboard embed or content
       const embed = {
-        color: 0xffd700,
-        author: {
-          name: fetchedMsg.author?.tag ?? "Unknown author",
-          icon_url: fetchedMsg.author?.displayAvatarURL() ?? "",
-        },
-        description: fetchedMsg.content ?? "no content",
-        footer: { text: `⭐ ${reaction.count} | ${fetchedMsg.id}` },
-        timestamp: new Date().toISOString(),
-      };
+				color: 0xffd700,
+				author: {
+					name: fetchedMsg.author?.tag ?? "Unknown author",
+					icon_url: fetchedMsg.author?.displayAvatarURL() ?? "",
+				},
+				description: fetchedMsg.content ?? "no content",
+				footer: { text: `${client.config.starboard.emoji} ${reaction.count} | ${fetchedMsg.id}` },
+				timestamp: new Date().toISOString(),
+			};
 
       await starboardChannel.send({ embeds: [embed] });
     }
