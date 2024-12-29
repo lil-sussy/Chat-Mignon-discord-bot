@@ -1,7 +1,17 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
-const ConfessionSettingSchema = new Schema({
-  threshold: { type: Number, default: 5 }
+interface IConfessionSetting extends Document {
+  channelId: string;
+  threshold: number;
+  colorIndex: number;
+}
+
+const ConfessionSettingSchema = new Schema<IConfessionSetting>({
+  channelId: { type: String, required: true },
+  threshold: { type: Number, default: 5 },
+  colorIndex: { type: Number, default: 0 },
 });
 
-export default model("ConfessionSetting", ConfessionSettingSchema); 
+ConfessionSettingSchema.index({ channelId: 1 }, { unique: true });
+
+export default model<IConfessionSetting>("ConfessionSetting", ConfessionSettingSchema); 

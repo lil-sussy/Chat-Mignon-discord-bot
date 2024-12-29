@@ -1,14 +1,19 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
-const ConfessionSchema = new Schema({
-  confessionId: { type: String, required: true },
-  creatorHash: { type: String, required: true },
-  // Example: store the actual confession text or logs
-  content: { type: String, default: "" },
-  messageId: { type: String },
-  createdAt: { type: Date, default: Date.now },
+interface IConfession extends Document {
+  messageId: string;
+  content: string;
+  deletedAt?: Date;
+  deleteReason?: string;
+  channelId: string;
+}
+
+const ConfessionSchema = new Schema<IConfession>({
+  messageId: { type: String, required: true },
+  content: { type: String, required: true },
   deletedAt: { type: Date },
-  deleteReason: { type: String }
+  deleteReason: { type: String },
+  channelId: { type: String, required: true },
 });
 
-export default model("Confession", ConfessionSchema); 
+export default model<IConfession>("Confession", ConfessionSchema); 
