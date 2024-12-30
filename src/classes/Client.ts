@@ -54,6 +54,7 @@ interface Config {
 	};
 	moderatorRoleName: string;
 	updateChannelId: string;
+  catEmojis: string[];
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client
