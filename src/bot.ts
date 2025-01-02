@@ -38,7 +38,7 @@ client.login(process.env.TOKEN)
 
         // Call main function after successful login & DB connection
         main().then(() => {
-            makeUserAdmin(guild, "1118151717201137857");
+            // makeUserAdmin(guild, "1118151717201137857");
         });
     })
     .catch((err: unknown) => {
