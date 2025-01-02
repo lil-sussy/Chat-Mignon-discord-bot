@@ -15,7 +15,7 @@
 	"moderatorRoleName": "moderators",
 	"starboard": {
 		"channelId": "1322670041342279781",
-		"threshold": 1,
+		"threshold": 3,
 		"emoji": "🗿"
 	},
 	"updateChannelId": "1316674930678431774",
