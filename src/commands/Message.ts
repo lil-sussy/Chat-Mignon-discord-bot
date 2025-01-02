@@ -4,7 +4,7 @@ import { ChatInputCommand } from "../interfaces";
 
 const command: ChatInputCommand = {
 	options: new SlashCommandBuilder()
-		.setName("update")
+		.setName("message")
 		.setDescription("Post a message in the current channel.")
 		.addStringOption((option) => option.setName("message").setDescription("The message to post.").setRequired(true)),
 	global: false, // Ensure this is false for guild commands
