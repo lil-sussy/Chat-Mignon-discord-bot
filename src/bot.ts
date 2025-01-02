@@ -55,25 +55,25 @@ client.login(process.env.TOKEN)
 
 async function main() {
 	// Register the starboard event
-	// client.events.set(StarboardEvent.name, StarboardEvent);
+	client.events.set(StarboardEvent.name, StarboardEvent);
 
 	// Add event listener for messageReactionAdd
-	client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
-		// Ensure the user is not a bot
-		if (user.bot) return;
+	// client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
+	// 	// Ensure the user is not a bot
+	// 	if (user.bot) return;
 
-		// Fetch the reaction if it's partial
-		if (reaction.partial) {
-			try {
-				await reaction.fetch();
-			} catch (error) {
-				console.error('Error fetching reaction:', error);
-				return;
-			}
-		}
+	// 	// Fetch the reaction if it's partial
+	// 	if (reaction.partial) {
+	// 		try {
+	// 			await reaction.fetch();
+	// 		} catch (error) {
+	// 			console.error('Error fetching reaction:', error);
+	// 			return;
+	// 		}
+	// 	}
 
-		await StarboardEvent.execute(client, reaction, user);
-	});
+	// 	await StarboardEvent.execute(client, reaction, user);
+	// });
 
 	// Function to switch activity
 	const switchActivity = () => {
