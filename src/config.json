@@ -11,7 +11,7 @@
 		"embed": "#2f3136"
 	},
 	"restVersion": "10",
-	"moderatorCategoryId": "1322068979790909512",
+	"moderationCategoryName": "moderation serveur",
 	"moderatorRoleName": "moderators",
 	"starboard": {
 		"channelId": "1322670041342279781",

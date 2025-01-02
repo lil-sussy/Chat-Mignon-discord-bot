@@ -46,7 +46,7 @@ interface Config {
 		embed: ColorResolvable;
 	};
 	restVersion: "10";
-	moderatorCategoryId: string;
+	moderationCategoryName: string;
 	starboard: {
 		channelId: string; // ID of the starboard channel
 		emoji: string;
@@ -54,7 +54,7 @@ interface Config {
 	};
 	moderatorRoleName: string;
 	updateChannelId: string;
-  catEmojis: string[];
+	catEmojis: string[];
 }
 /**
  * ExtendedClient is extends frome `Discord.js`'s Client
