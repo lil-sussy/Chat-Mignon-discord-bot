@@ -1,17 +1,16 @@
-import { ChatInputCommandInteraction, Role, SlashCommandBuilder } from "discord.js";
+import { ChatInputCommandInteraction, Role, SlashCommandBuilder, TextChannel, NewsChannel } from "discord.js";
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces";
 
 const command: ChatInputCommand = {
 	options: new SlashCommandBuilder()
 		.setName("update")
-		.setDescription("Post a message to the update channel.")
+		.setDescription("Post a message in the current channel.")
 		.addStringOption((option) => option.setName("message").setDescription("The message to post.").setRequired(true)),
 	global: false, // Ensure this is false for guild commands
 
 	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
 		// Check if the user has the moderator role
-		// (defined by config.moderatorRoleName)
 		const roleName = client.config.moderatorRoleName;
 		const moderatorRole: Role | undefined = interaction.guild?.roles.cache.find((r) => r.name === roleName);
 
@@ -33,7 +32,7 @@ const command: ChatInputCommand = {
 			return;
 		}
 
-		// Get the message content and channel from config
+		// Get the message content
 		const message = interaction.options.getString("message", true);
 
 		// Replace every \cat\ with a random cat emoji
@@ -42,23 +41,19 @@ const command: ChatInputCommand = {
 			return client.config.catEmojis[Math.floor(Math.random() * client.config.catEmojis.length)];
 		});
 
-		const updateChannelId = client.config.updateChannelId;
-		const updateChannel = interaction.guild?.channels.cache.get(updateChannelId);
-
-		if (!updateChannel?.isTextBased()) {
+		// Ensure the channel is a TextChannel or NewsChannel before sending the message
+		if (interaction.channel instanceof TextChannel || interaction.channel instanceof NewsChannel) {
+			await interaction.channel.send(updatedMessage);
 			await interaction.reply({
-				content: "Update channel not found or is not a text-based channel.",
+				content: "Your message has been posted in this channel!",
 				ephemeral: true,
 			});
-			return;
+		} else {
+			await interaction.reply({
+				content: "This command can only be used in text-based channels.",
+				ephemeral: true,
+			});
 		}
-
-		// Send the update message to the specified channel
-		await updateChannel.send(updatedMessage);
-		await interaction.reply({
-			content: "Your message has been posted to the update channel!",
-			ephemeral: true,
-		});
 	},
 };
 
