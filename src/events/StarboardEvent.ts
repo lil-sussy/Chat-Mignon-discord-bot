@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { Event } from "../interfaces/Event";
 import ExtendedClient from "../classes/Client";
+import StarboardSetting from "../models/StarboardSetting";
 
 const StarboardEvent: Event = {
   name: "messageReactionAdd",
@@ -21,7 +22,12 @@ const StarboardEvent: Event = {
 
     if (reaction.message.partial) await reaction.message.fetch();
 
-    const threshold = client.config.starboard.threshold;
+    let starboardDoc = await StarboardSetting.findOne({});
+    if (!starboardDoc) {
+      starboardDoc = await StarboardSetting.create({ threshold: 3 });
+    }
+    const threshold = starboardDoc.threshold;
+
     const starboardChannel = client.channels.cache.get(
       client.config.starboard.channelId
     ) as TextChannel;

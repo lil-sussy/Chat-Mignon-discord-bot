@@ -50,7 +50,6 @@ interface Config {
 	starboard: {
 		channelId: string; // ID of the starboard channel
 		emoji: string;
-		threshold: number; // Number of stars required to star a message
 	};
 	moderatorRoleName: string;
 	updateChannelId: string;
