@@ -183,6 +183,9 @@ const StarboardCommand: ChatInputCommand = {
             messageContent = foundMessage.embeds[0].description || "no content";
           }
 
+          // Create a link to the original message
+          const messageLink = `https://discord.com/channels/${interaction.guild?.id}/${foundMessage.channel.id}/${foundMessage.id}`;
+
           // Update the embed with fresh content, including channel info
           const updatedEmbed = {
             color: 0xffd700,
@@ -197,12 +200,28 @@ const StarboardCommand: ChatInputCommand = {
             fields: [
               {
                 name: "Channel",
-                value: `<#${foundMessage.channel.id}>`,
+                value: `<#${foundMessage.channel.id}> [Original Message](${messageLink})`,
                 inline: false,
               },
             ],
             timestamp: new Date().toISOString(),
-          };
+          } as any; // Cast to "any" to avoid strict type issues with optional fields.
+
+          // Process attachments
+          for (const attach of foundMessage.attachments.values()) {
+            if (attach.contentType?.startsWith("image/")) {
+              // Embed the first image
+              updatedEmbed.image = { url: attach.url };
+            } else if (attach.contentType?.startsWith("video/")) {
+              // Provide a link to the video
+              updatedEmbed.fields.push({
+                name: "Attached Video",
+                value: `[Video Link](${attach.url})`,
+                inline: false,
+              });
+            }
+            // If it's a linked embed (e.g., YouTube), do nothing special—it's already in messageContent.
+          }
 
           // Edit the existing starboard message
           await starMsg.edit({ embeds: [updatedEmbed] });

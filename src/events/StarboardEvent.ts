@@ -36,17 +36,51 @@ const StarboardEvent: Event = {
       if (!starboardChannel) return;
 
       const fetchedMsg = reaction.message;
-      // Construct starboard embed or content
+
+      // Create a link to the original message
+      const messageLink = `https://discord.com/channels/${fetchedMsg.guild?.id}/${fetchedMsg.channel.id}/${fetchedMsg.id}`;
+
+      // Figure out text content (bot embed fallback)
+      const mainContent =
+        fetchedMsg.content
+        || (fetchedMsg.embeds[0]?.description || "no content");
+
+      // Build base embed
       const embed = {
-				color: 0xffd700,
-				author: {
-					name: fetchedMsg.author?.tag ?? "Unknown author",
-					icon_url: fetchedMsg.author?.displayAvatarURL() ?? "",
-				},
-				description: fetchedMsg.content ?? "no content",
-				footer: { text: `${client.config.starboard.emoji} ${reaction.count} | ${fetchedMsg.id}` },
-				timestamp: new Date().toISOString(),
-			};
+        color: 0xffd700,
+        author: {
+          name: fetchedMsg.author?.tag ?? "Unknown author",
+          icon_url: fetchedMsg.author?.displayAvatarURL() ?? "",
+        },
+        description: mainContent,
+        footer: {
+          text: `${client.config.starboard.emoji} ${reaction.count} | ${fetchedMsg.id}`
+        },
+        fields: [
+          {
+            name: "Channel",
+            value: `<#${fetchedMsg.channel.id}> [Original Message](${messageLink})`,
+            inline: false,
+          },
+        ],
+        timestamp: new Date().toISOString(),
+      } as any; // Cast to "any" to avoid strict type issues with optional fields.
+
+      // Process attachments
+      for (const attach of fetchedMsg.attachments.values()) {
+        if (attach.contentType?.startsWith("image/")) {
+          // Embed the first image
+          embed.image = { url: attach.url };
+        } else if (attach.contentType?.startsWith("video/")) {
+          // Provide a link to the video
+          embed.fields.push({
+            name: "Attached Video",
+            value: `[Video Link](${attach.url})`,
+            inline: false,
+          });
+        }
+        // If it's a linked embed (e.g., YouTube), do nothing special—it's already in mainContent.
+      }
 
       await starboardChannel.send({ embeds: [embed] });
     }
