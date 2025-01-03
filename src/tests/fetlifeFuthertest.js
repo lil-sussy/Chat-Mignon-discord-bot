@@ -1,51 +1,53 @@
 // fetchLoginPage.js
 const axios = require("axios");
 const { URLSearchParams } = require("url");
+const fs = require("fs"); // Import the fs module
+const { wrapper: axiosCookieJarSupport } = require("axios-cookiejar-support");
+const { CookieJar } = require("tough-cookie");
+
+// Create a dedicated axios instance with cookie jar support
+const cookieJar = new CookieJar();
+const axiosInstance = axios.create({
+	baseURL: "https://fetlife.com",
+	withCredentials: true,
+	headers: {
+		"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.132 Safari/537.36",
+		"Accept-Language": "en-US,en;q=0.9",
+		"Accept-Encoding": "gzip, deflate, br, zstd",
+		"Content-Type": "application/x-www-form-urlencoded",
+		"Upgrade-Insecure-Requests": "1",
+		"Sec-Fetch-Dest": "document",
+		"Sec-Fetch-Mode": "navigate",
+		"Sec-Fetch-Site": "same-origin",
+		"Sec-Fetch-User": "?1",
+		Priority: "u=0, i",
+		Pragma: "no-cache",
+		"Cache-Control": "no-cache",
+	},
+});
+axiosCookieJarSupport(axiosInstance);
 
 const fetlifeBaseUrl = "https://fetlife.com"; // Base URL
-const loginPageUrl = `${fetlifeBaseUrl}/login`; // Complete URL for the login page
-
 async function fetchCsrfToken() {
-	const signInPage = await axios.get(loginPageUrl, {
+	const signInPage = await axiosInstance.get(`/login`, {
 		headers: {
 			"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
-			Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-			"Accept-Language": "en-US,en;q=0.5",
-			"Accept-Encoding": "gzip, deflate, br, zstd",
-			Referer: "https://fetlife.com/logged_out",
-			"Upgrade-Insecure-Requests": "1",
-			"Sec-Fetch-Dest": "document",
-			"Sec-Fetch-Mode": "navigate",
-			"Sec-Fetch-Site": "same-origin",
-			"Sec-Fetch-User": "?1",
-			Connection: "keep-alive",
-			Cookie: "language=en; fetlife_pwa=none; ",
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				"Accept-Language": "en-US,en;q=0.5",
+				"Accept-Encoding": "gzip, deflate, br, zstd",
+				Referer: "https://fetlife.com/logged_out",
+				"Upgrade-Insecure-Requests": "1",
+				"Sec-Fetch-Dest": "document",
+				"Sec-Fetch-Mode": "navigate",
+				"Sec-Fetch-Site": "same-origin",
+				"Sec-Fetch-User": "?1",
+				Connection: "keep-alive",
+				Cookie: "language=en; fetlife_pwa=none; ",
 		},
 	});
 
 	// 2) Parse the HTML & get CSRF token
 	return findCsrfToken(signInPage.data);
-}
-async function refresh__cf_bmCookie() {
-  const cringePage = "https://gav2.fetlife.com/vite/assets/application_style-BJSyJdCu.js";
-	const signInPage = await axios.get(cringePage, {
-		headers: {
-			Host: "gav2.fetlife.com",
-			"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
-			Accept: "*/*",
-			"Accept-Language": "en-US,en;q=0.5",
-			"Accept-Encoding": "gzip, deflate, br, zstd",
-			Referer: "https://fetlife.com/",
-			Origin: "https://fetlife.com",
-			"Sec-Fetch-Dest": "script",
-			"Sec-Fetch-Mode": "cors",
-			"Sec-Fetch-Site": "same-site",
-			Connection: "keep-alive",
-		},
-	});
-
-	// Return the __cf_bm cookie from the response headers
-	return signInPage.headers['set-cookie'].find(cookie => cookie.startsWith('__cf_bm'));
 }
 
 function findCsrfToken(str) {
@@ -56,71 +58,111 @@ function findCsrfToken(str) {
 
 function findUserId(str) {
 	// same regex approach as in PHP
-	let m = str.match(/FL.user = {\nid\s*=\s*([0-9]+);/);
+	let m = str.match(/FL.user = {\s*id\s*=\s*([0-9]+);/);
 	if (!m) {
 		m = str.match(/var currentUserId\s*=\s*([0-9]+)/);
 	}
 	return m ? m[1] : false;
 }
 
+async function fetchCookiesFromUrls(urls) {
+	const cookies = new Map();
+	for (const url of urls) {
+		const response = await axiosInstance.get(url, {
+			headers: {
+				// "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+				// Accept: "*/*",
+				// "Accept-Language": "en-US,en;q=0.5",
+				// "Accept-Encoding": "gzip, deflate, br, zstd",
+				// Referer: "https://fetlife.com/",
+				// Origin: "https://fetlife.com",
+				// "Sec-Fetch-Dest": "script",
+				// "Sec-Fetch-Mode": "cors",
+				// "Sec-Fetch-Site": "same-site",
+				// Connection: "keep-alive",
+				Referer: "https://fetlife.com/",
+				Origin: "https://fetlife.com",
+			},
+		});
+		const setCookies = response.headers["set-cookie"];
+		if (setCookies) {
+			setCookies.forEach((cookie) => {
+				const cookieName = cookie.split("=")[0];
+				cookies.set(cookieName, cookie);
+				cookieJar.setCookieSync(cookie, url);
+			});
+		}
+	}
+	return cookies;
+}
+
+// Simplify normalHeaders or remove it altogether if you like.
+// No explicit Cookie header so the jar is the single source of truth.
+
 // Function to fetch the login page
 async function fetchLoginPage() {
 	try {
-		const csrfToken = await fetchCsrfToken();
-    const cf_bmCookie = await refresh__cf_bmCookie();
+		const urls = [
+			"https://gav2.fetlife.com/vite/assets/i18n-en-B32nWQ9x.js",
+			"https://gav2.fetlife.com/vite/assets/application_style-BJSyJdCu.js",
+			"https://gav2.fetlife.com/vite/assets/i18n-DokRD9wR.js",
+			"https://gav2.fetlife.com/vite/assets/application-eEsEIcSA.js",
+			"https://gav2.fetlife.com/vite/assets/controller-CrcZEXPm.js",
+			"https://gav2.fetlife.com/vite/assets/tags_input-Bz3J-wsg.js",
+			"https://gav2.fetlife.com/vite/assets/form_validator_controller-C5VsjArb.js",
+			"https://gav2.fetlife.com/vite/assets/index-DKqD94ZC.js",
+			"https://gav2.fetlife.com/vite/assets/dom_ready-DM2Vf_4Q.js",
+			"https://gav2.fetlife.com/vite/assets/edit_tags-3aC6V8EV.js",
+			"https://gav2.fetlife.com/vite/assets/index-BriLBh9p.js",
+			"https://gav2.fetlife.com/vite/assets/push_notifications_firebase-D0-dJ6DL.js",
+			"https://gav2.fetlife.com/vite/assets/polyfills-legacy-CBq8z5GW.js",
+			"https://gav2.fetlife.com/vite/assets/application-legacy-DwJHEEKc.js",
+			"https://gav2.fetlife.com/vite/assets/i18n-en-legacy-DGf0JAVa.js",
+		];
+		const cookiesMap = await fetchCookiesFromUrls(urls);
+
+		// Now use the pre-configured axiosInstance
+		let response = await axiosInstance.get("/login", {
+			Referer: "https://fetlife.com/",
+			Origin: "https://fetlife.com",
+		});
+
+		const setCookies = response.headers["set-cookie"] || [];
+		setCookies.forEach((cookie) => {
+			const cookieName = cookie.split("=")[0];
+			cookiesMap.set(cookieName, cookie);
+			cookieJar.setCookieSync(cookie, `${fetlifeBaseUrl}/login`);
+		});
+
+		let html = response.data;
+		const csrfToken = findCsrfToken(html);
+		fs.writeFileSync("./src/tests/cringe/login.html", html, "utf8");
 
 		const postData = new URLSearchParams({
 			"user[login]": process.env.FETLIFE_USERNAME,
 			"user[password]": process.env.FETLIFE_PASSWORD,
 			"user[locale]": "en",
 			"user[otp_attempt]": "step_2",
-      // "user[remember_me]": "1",
 			authenticity_token: csrfToken,
 		});
-    
-		const response = await axios.post(loginPageUrl, postData.toString(), {
-			credentials: "include",
+
+		response = await axiosInstance.post("/login", postData.toString(), {
 			headers: {
-				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
-				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-				"Accept-Language": "en-US,en;q=0.5",
-				"Content-Type": "application/x-www-form-urlencoded",
-				"Upgrade-Insecure-Requests": "1",
-				"Sec-Fetch-Dest": "document",
-				"Sec-Fetch-Mode": "navigate",
-				"Sec-Fetch-Site": "same-origin",
-				"Sec-Fetch-User": "?1",
-				Priority: "u=0, i",
-				Pragma: "no-cache",
-				"Cache-Control": "no-cache",
-				Cookie: `language=en; fetlife_pwa=none; _cfuvid=99IFG9_XcHA2cH9_wMibsEpt7iwnxhenSJZQD3NHvjQ-1735319556046-0.0.1.1-604800000; __cf_bm=gKuO.7bwzQdw_7Ql2D9pB9cu.Yu1uzciLdoe6t4Umvg-1735903337-1.0.1.1-CnmhFI83tXblbca3KEz4A.rRfY3qmCTorfwTCXdKVA5MPfWZgf2FviWDTfKBILwUBAXrmmHhNRkzenHlp1759iHuleJpohh4VSC5Oz4kVJA; cf_clearance=gLb6vjZT0iHdoYJIx29bMohJLRDE53O6meSSVHAd03A-1735904402-1.2.1.1-DHNNhQPp5UdI7drfWvcxRRSo6h3i808u5LE.LSvcREHxODI4DUwObmu5HOYRxVHBustNTWAHSiGMICk0Hv.dd2IyODJTsNLyrko09CiwQr5eukHw0v8qj4ZgLzmoGqRgqhFTjYIuv.Ouft.SiePQzUh9oey2WEAmUkeSLqsAO2Ojgn7wIlToQ2JRcoZEQ2.8CYNoS.W2wSyF3LYc21SwTEs1mXwNxUtTyD4TFk_zGVJhOwGKUjwLir3MaonBugHTGxQYh_SRpbVjzFKgTOijPwezW.e4shIwGL5yBcSoSlB7yloiOxgbVOIbLw9Q.QjVawm1u7ufWOPVZgsonfPvs6mtlAj_O0ubQgSUtdgMR6HQXaTLy4m0OPHnR5pQc4iu; _fl_sessionid=b12928b4fc1a5155116a321ab19657da`,
-			},
-			referrer: "https://fetlife.com/logged_out",
-			method: "POST",
-			mode: "cors",
+				Referrer: "https://fetlife.com/login",
+			}
 		});
-		// const response = await axios.post(loginPageUrl, postData.toString(), {
-		// 	headers: {
-		// 		Host: "fetlife.com",
-		// 		"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
-		// 		Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-		// 		"Accept-Language": "en-US,en;q=0.5",
-		// 		"Accept-Encoding": "gzip, deflate, br, zstd",
-		// 		Referer: "https://fetlife.com/logged_out",
-		// 		"Upgrade-Insecure-Requests": "1",
-		// 		"Sec-Fetch-Dest": "document",
-		// 		"Sec-Fetch-Mode": "navigate",
-		// 		"Sec-Fetch-Site": "same-origin",
-		// 		"Sec-Fetch-User": "?1",
-		// 		Connection: "keep-alive",
-		// 		Cookie: `language=en; fetlife_pwa=none; ${cf_bmCookie};`,
-		// 	},
-		// });
-    const userID = findUserId(response.data);
+
+		html = response.data;
+		fs.writeFileSync("./src/tests/cringe/postLogin.html", html, "utf8");
+
+		const userID = findUserId(html);
 		console.log("Response Status:", response.status);
-		console.log("new cookies", response.headers.get("set-cookie")); // This will log the HTML of the login page
-		console.log("ui cookie", response.headers.get("set-cookie").find(cookie => cookie.startsWith('ui')));
-		console.log("UserID:", userID); // This will log the HTML of the login page
+		console.log("new cookies", response.headers["set-cookie"]);
+		console.log(
+			"ui cookie",
+			response.headers["set-cookie"]?.find((cookie) => cookie.startsWith("ui"))
+		);
+		console.log("UserID:", userID);
 	} catch (error) {
 		console.error("Error fetching the login page:", error.message);
 	}
