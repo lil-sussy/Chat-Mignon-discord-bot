@@ -46,3 +46,6 @@ dist/
 
 # MacOS
 .DS_Store
+
+
+src/tests/cringe.html

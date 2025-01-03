@@ -8,7 +8,7 @@
  * correctly against FetLife or other real-world conditions.
  *********************************************************************/
 
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 import { JSDOM } from "jsdom";
@@ -66,7 +66,7 @@ export class FetLifeConnection extends FetLife {
 	curPage: string | null;
 	proxyUrl: string | null;
 	proxyType: string | null;
-	client: any;
+	axiosClient: AxiosInstance;
 
 	constructor(usr: User) {
 		super();
@@ -77,7 +77,7 @@ export class FetLifeConnection extends FetLife {
 		this.proxyUrl = null;
 		this.proxyType = null;
 
-		this.client = wrapper(
+		this.axiosClient = wrapper(
 			axios.create({
 				baseURL: FetLife.baseUrl,
 				jar: this.cookiejar,
@@ -165,14 +165,32 @@ export class FetLifeConnection extends FetLife {
 	async logIn(): Promise<boolean> {
 		// 1) Grab FetLife sign_in page to get CSRF
 		// so that the session cookies are set.
-		const signInUrl = "/users/sign_in";
-		const signInPage = await this.client.get(signInUrl, {
-			// Possibly handle proxy config here if you want a global approach
-			// see axios documentation for how to handle proxies in Node
+		const signInUrl = "/login";
+		const signInPage = await this.axiosClient.get(signInUrl, {
+			headers: {
+				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				"Accept-Language": "en-US,en;q=0.5",
+				"Accept-Encoding": "gzip, deflate, br, zstd",
+				"Upgrade-Insecure-Requests": "1",
+				"Sec-Fetch-Dest": "document",
+				"Sec-Fetch-Mode": "navigate",
+				"Sec-Fetch-Site": "none",
+				"Sec-Fetch-User": "?1",
+				Connection: "keep-alive",
+				Cookie: "language=en; ",
+			},
 		});
 
 		// 2) Parse the HTML & get CSRF token
 		const csrfToken = this.findCsrfToken(signInPage.data);
+		if (csrfToken) {
+			this.setCsrfToken(csrfToken);
+		} else {
+			throw new Error("CSRF token not found");
+		}
+		// 2) Parse the HTML & get CSRF token
+		const cfbmCookie = await this.refreshCfBmCookie();
 		if (csrfToken) {
 			this.setCsrfToken(csrfToken);
 		} else {
@@ -183,12 +201,13 @@ export class FetLifeConnection extends FetLife {
 		const postData = {
 			"user[login]": this.usr.nickname,
 			"user[password]": this.usr.password,
+			"user[locale]": "en",
 			"user[otp_attempt]": "step_1",
 			authenticity_token: this.csrfToken,
-			utf8: "✓",
+			// utf8: "✓",
 		};
 
-		const loginResponse = await this.doHttpPost("/users/sign_in", postData);
+		const loginResponse = await this.doHttpRequest(signInUrl, postData, "POST", cfbmCookie);
 
 		// Now, check if we got a valid user ID
 		const userId = this.findUserId(loginResponse.body);
@@ -199,27 +218,34 @@ export class FetLifeConnection extends FetLife {
 		}
 	}
 
-	/**
-	 * Perform an HTTP POST
-	 */
-	async doHttpPost(urlPath: string, data: object | string = ""): Promise<HttpResponse> {
-		return this.doHttpRequest(urlPath, data, "POST");
-	}
+	async refreshCfBmCookie() {
+		const cringePage = "https://gav2.fetlife.com/vite/assets/application_style-BJSyJdCu.js";
+		const signInPage = await axios.get(cringePage, {
+			headers: {
+				Host: "gav2.fetlife.com",
+				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+				Accept: "*/*",
+				"Accept-Language": "en-US,en;q=0.5",
+				"Accept-Encoding": "gzip, deflate, br, zstd",
+				Referer: "https://fetlife.com/",
+				Origin: "https://fetlife.com",
+				"Sec-Fetch-Dest": "script",
+				"Sec-Fetch-Mode": "cors",
+				"Sec-Fetch-Site": "same-site",
+				Connection: "keep-alive",
+			},
+		});
 
-	/**
-	 * Perform an HTTP GET
-	 */
-	async doHttpGet(urlPath: string, data: object | string = ""): Promise<HttpResponse> {
-		return this.doHttpRequest(urlPath, data, "GET");
+		// Return the __cf_bm cookie from the response headers
+		return signInPage.headers["set-cookie"]!.find((cookie) => cookie.startsWith("__cf_bm"));
 	}
-
 	/**
 	 * Generic request function
 	 * @param {string} urlPath The request URI (e.g., "/users/1")
 	 * @param {object|string} data Parameters to send
 	 * @param {string} method The HTTP method: 'GET' or 'POST'
 	 */
-	async doHttpRequest(urlPath: string, data: object | string, method: string = "GET"): Promise<HttpResponse> {
+	async doHttpRequest(urlPath: string, data: object | string, method: string = "GET", cf_bmCookie?: string): Promise<HttpResponse> {
 		let response;
 
 		if (method === "GET") {
@@ -230,11 +256,41 @@ export class FetLifeConnection extends FetLife {
 				params = new url.URLSearchParams(data as Record<string, string>).toString();
 			}
 			const fullUrl = params ? `${urlPath}?${params}` : urlPath;
-			response = await this.client.get(fullUrl);
+			response = await this.axiosClient.get(fullUrl, {
+				headers: {
+					"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+					Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+					"Accept-Language": "en-US,en;q=0.5",
+					"Accept-Encoding": "gzip, deflate, br, zstd",
+					"Upgrade-Insecure-Requests": "1",
+					"Sec-Fetch-Dest": "document",
+					"Sec-Fetch-Mode": "navigate",
+					"Sec-Fetch-Site": "none",
+					"Sec-Fetch-User": "?1",
+					Connection: "keep-alive",
+					Cookie: "language=en; ",
+				},
+			});
 		} else {
 			// POST
-			response = await this.client.post(urlPath, new url.URLSearchParams(data as Record<string, string>).toString(), {
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			const postData = new url.URLSearchParams(data as Record<string, string>).toString();
+			response = await this.axiosClient.post(urlPath, postData, {
+				headers: {
+					Host: "fetlife.com",
+					"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+					Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+					"Accept-Language": "en-US,en;q=0.5",
+					"Accept-Encoding": "gzip, deflate, br, zstd",
+					Referer: "https://fetlife.com/logged_out",
+					"Upgrade-Insecure-Requests": "1",
+					"Sec-Fetch-Dest": "document",
+					"Sec-Fetch-Mode": "navigate",
+					"Sec-Fetch-Site": "same-origin",
+					"Sec-Fetch-User": "?1",
+					Connection: "keep-alive",
+					Cookie: `language=en; fetlife_pwa=none; ${cf_bmCookie};`,
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
 			});
 		}
 
@@ -244,9 +300,9 @@ export class FetLifeConnection extends FetLife {
 
 		// Update CSRF token on each request
 		const csrfToken = this.findCsrfToken(body);
-    if (!csrfToken) {
-      throw new Error("CSRF token not found");
-    }
+		if (!csrfToken) {
+			throw new Error("CSRF token not found");
+		}
 		if (csrfToken !== null) {
 			this.setCsrfToken(csrfToken);
 		}
@@ -352,7 +408,7 @@ export class FetLifeUser extends FetLife {
 		if (nickname === this.nickname && this.id) {
 			return this.id;
 		} else {
-			const result = await this.connection.doHttpGet(`/${nickname}`);
+			const result = await this.connection.doHttpRequest(`/${nickname}`, {}, "GET");
 			const finalUrl = result.curl_info.url;
 			// finalUrl might be something like ".../users/12345"
 			const p = url.parse(finalUrl);
@@ -368,7 +424,7 @@ export class FetLifeUser extends FetLife {
 		if (this.id && !id) {
 			id = this.id;
 		}
-		const result = await this.connection.doHttpGet(`/users/${id}`);
+		const result = await this.connection.doHttpRequest(`/users/${id}`, {}, "GET");
 		return this.connection.findUserNickname(result.body);
 	}
 
@@ -535,7 +591,7 @@ export class FetLifeUser extends FetLife {
 		if (qs) {
 			finalUrl += qs;
 		}
-		const result = await this.connection.doHttpGet(finalUrl);
+		const result = await this.connection.doHttpRequest(finalUrl, {}, "GET");
 		return result;
 	}
 
@@ -631,7 +687,7 @@ export class FetLifeProfile extends FetLifeContent {
 
 	async populate(): Promise<void> {
 		// Attempt to fetch the user page
-		const resp = await this.usr.connection.doHttpGet(this.getUrl());
+		const resp = await this.usr.connection.doHttpRequest(this.getUrl(), {}, "GET");
 		const html = resp.body;
 
 		// If we got bounced to home or 500

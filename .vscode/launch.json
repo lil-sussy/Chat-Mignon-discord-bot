@@ -39,7 +39,25 @@
         "${workspaceFolder}/dist/**/*.js"
       ],
       "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true
+      "sourceMaps": true,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug further fetlife test",
+      "program": "${workspaceFolder}/src/tests/fetlifeFuthertest.js",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "sourceMaps": true,
+      "envFile": "${workspaceFolder}/.env"
     },
     {
       "type": "node",
