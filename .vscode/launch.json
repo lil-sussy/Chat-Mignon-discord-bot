@@ -23,9 +23,29 @@
     },
     {
       "type": "node",
+      "request": "launch",
+      "name": "Debug fetlife test",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "debug:fetlife"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "sourceMaps": true
+    },
+    {
+      "type": "node",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "request": "launch",
-      "name": "Debug TypeScript 2",
+      "name": "Debug bot TypeScript 2",
       "program": "${workspaceFolder}/src/bot.ts",
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"

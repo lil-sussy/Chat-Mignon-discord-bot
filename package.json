@@ -11,6 +11,7 @@
 		"start:manager": "node ./dist/manager.js",
 		"dev:bot": "nodemon src/bot.ts",
 		"debug:bot": "nodemon --config nodemon.json",
+		"debug:fetlife": "node -r ts-node/register ./node_modules/mocha/bin/mocha src/tests/fetlifeProfile.ts",
 		"dev:manager": "nodemon src/manager.ts",
 		"build": "tsc --project tsconfig.json"
 	},
@@ -26,11 +27,19 @@
 	"homepage": "https://github.com/ppauel/typescript-discord-bot#readme",
 	"dependencies": {
 		"@fluent/bundle": "^0.17.1",
+		"axios": "^1.7.9",
+		"axios-cookiejar-support": "^5.0.5",
+		"chai": "^5.1.2",
 		"discord.js": "^14.16.2",
 		"dotenv": "^16.0.3",
+		"jsdom": "^25.0.1",
+		"mocha": "^11.0.1",
 		"mongoose": "^8.9.2"
 	},
 	"devDependencies": {
+		"@types/chai": "^5.0.1",
+		"@types/jsdom": "^21.1.7",
+		"@types/mocha": "^10.0.10",
 		"@types/node": "^18.11.11",
 		"@typescript-eslint/eslint-plugin": "^5.48.1",
 		"@typescript-eslint/parser": "^5.48.1",
