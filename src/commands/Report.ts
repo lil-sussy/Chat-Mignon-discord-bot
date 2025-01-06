@@ -52,7 +52,7 @@ export default {
     await createTicketChannel({
 			client: client,
 			guild: guild,
-			channelName: `report-${interaction.user.username}-${reportedUser.username}`,
+			channelNames: [`report-${interaction.user.username}-${reportedUser.username}`, `report-${reportedUser.username}`],
 			categoryName: client.config.moderationCategoryName,
 			whoCanDelete: "mods",
 			hasSecondButton: true,

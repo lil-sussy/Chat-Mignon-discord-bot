@@ -6,6 +6,8 @@ interface IConfession extends Document {
   deletedAt?: Date;
   deleteReason?: string;
   channelId: string;
+  reportedBy?: string[];
+  ticketChannelId?: string;
 }
 
 const ConfessionSchema = new Schema<IConfession>({
@@ -14,6 +16,8 @@ const ConfessionSchema = new Schema<IConfession>({
   deletedAt: { type: Date },
   deleteReason: { type: String },
   channelId: { type: String, required: true },
+  reportedBy: { type: [String], default: [] },
+  ticketChannelId: { type: String },
 });
 
 export default model<IConfession>("Confession", ConfessionSchema); 

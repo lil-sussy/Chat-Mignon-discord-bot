@@ -22,22 +22,24 @@ import ExtendedClient from "../classes/Client";
 export async function createTicketChannel(params: {
   client: ExtendedClient;
   guild: Guild;
-  channelName: string;
+  channelNames: string[];
   categoryName: string;
   whoCanDelete: "mods" | "everyone";
   hasSecondButton: boolean;
   userIds: string[];
   content: string; // text to go into the pinned embed
+  threadIndex?: number;
 }) {
   const {
     client,
     guild,
-    channelName,
+    channelNames,
     categoryName,
     whoCanDelete,
     hasSecondButton,
     userIds,
     content,
+    threadIndex,
   } = params;
 
   // Find the category by name
@@ -71,17 +73,16 @@ export async function createTicketChannel(params: {
   }
 
   // Allow listed users
-  for (const userId of userIds) {
-    overwrites.push({
-      id: userId,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-      type: OverwriteType.Member,
-    });
-  }
+  
+  overwrites.push({
+    id: userIds[threadIndex ? threadIndex : 0],
+    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+    type: OverwriteType.Member,
+  });
 
   // Create channel
   const channel = await guild.channels.create({
-    name: channelName,
+    name: channelNames[threadIndex ? threadIndex : 0],
     type: ChannelType.GuildText,
     parent: category.id,
     permissionOverwrites: overwrites,
@@ -132,26 +133,36 @@ export async function createTicketChannel(params: {
   });
 
   collector.on("collect", async (interaction: ButtonInteraction) => {
-    if (interaction.customId === "delete_ticket") {
-      await interaction.reply({
-        content: "Ticket channel will be deleted.",
+    try {
+      if (interaction.customId === "delete_ticket") {
+        // Log before attempting to delete the channel
+        console.log(`Attempting to delete channel: ${channel.id}`);
+        
+        // Delete the channel
+        await channel.delete();
+
+      } else if (interaction.customId === "create_new_ticket") {
+        await interaction.reply({
+          content: "Creating a new ticket channel...",
+          ephemeral: true,
+        });
+        await createTicketChannel({
+          client: client,
+          guild: guild,
+          channelNames: channelNames,
+          categoryName,
+          whoCanDelete: "mods",
+          hasSecondButton: false,
+          userIds: userIds,
+          threadIndex: threadIndex ? threadIndex + 1 : 0,
+          content: "New ticket channel regarding the reported user.",
+        });
+      }
+    } catch (error) {
+      console.error("Error handling interaction:", error);
+      await interaction.followUp({
+        content: "An error occurred while processing this interaction.",
         ephemeral: true,
-      });
-      await channel.delete();
-    } else if (interaction.customId === "create_new_ticket") {
-      await interaction.reply({
-        content: "Creating a new ticket channel...",
-        ephemeral: true,
-      });
-      await createTicketChannel({
-        client: client,
-        guild: guild,
-        channelName: `ticket-${Date.now()}`,
-        categoryName,
-        whoCanDelete: "mods",
-        hasSecondButton: false,
-        userIds: userIds,
-        content: "New ticket channel regarding the reported user.",
       });
     }
   });
