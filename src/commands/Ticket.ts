@@ -34,7 +34,7 @@ const TicketCommand: ChatInputCommand = {
         )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), // Only mods can use this
-  global: true,
+  global: false,
   async execute(client, interaction: ChatInputCommandInteraction): Promise<void> {
     const subcommand = interaction.options.getSubcommand();
 
