@@ -80,7 +80,6 @@ const TicketCommand: ChatInputCommand = {
       try {
         await channel.permissionOverwrites.create(userId, {
           ViewChannel: true,
-          SendMessages: true,
         });
 
         await interaction.reply({
