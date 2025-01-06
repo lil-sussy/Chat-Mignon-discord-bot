@@ -1,57 +1,47 @@
-import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role } from 'discord.js';
-import ExtendedClient from './classes/Client';
-import { config } from 'dotenv';
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role } from "discord.js";
+import ExtendedClient from "./classes/Client";
+import { config } from "dotenv";
 import StarboardEvent from "./events/StarboardEvent";
 import StarboardCommand from "./commands/Starboard";
-import mongoose from 'mongoose';
-import StarboardSetting from './models/StarboardSetting';
-import Confession from './models/Confession'; // for storing confessions
+import mongoose from "mongoose";
+import StarboardSetting from "./models/StarboardSetting";
+import Confession from "./models/Confession"; // for storing confessions
 
 // Load .env file contents
 config();
-import './features/i18n';
+import "./features/i18n";
 
 // Initialization (specify intents and partials)
 const client = new ExtendedClient({
-    intents: [
-        Intents.Guilds,
-        Intents.GuildMessages,
-        Intents.MessageContent,
-        Intents.GuildMembers,
-        Intents.GuildMessageReactions,
-    ],
-    partials: [
-        Partials.Message,
-        Partials.Channel,
-        Partials.Reaction,
-        Partials.GuildMember,
-    ],
+	intents: [Intents.Guilds, Intents.GuildMessages, Intents.MessageContent, Intents.GuildMembers, Intents.GuildMessageReactions],
+	partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
 });
 
-client.login(process.env.TOKEN)
-    .then(async () => {
-        // Connect to MongoDB using .env credentials
-        await mongoose.connect(process.env.MONGO_PUBLIC_URL || "mongodb://junction.proxy.rlwy.net:47924");
+client
+	.login(process.env.TOKEN)
+	.then(async () => {
+		// Connect to MongoDB using .env credentials
+		await mongoose.connect(process.env.MONGO_PUBLIC_URL || "mongodb://junction.proxy.rlwy.net:47924");
 
-        // Fetch the guild object using the guild ID
-        const guild = await client.guilds.fetch(client.config.guild); // Replace with your actual guild ID
+		// Fetch the guild object using the guild ID
+		const guild = await client.guilds.fetch(client.config.guild); // Replace with your actual guild ID
 
-        // Call main function after successful login & DB connection
-        main().then(() => {
-            // makeUserAdmin(guild, "1118151717201137857");
-        });
-    })
-    .catch((err: unknown) => {
-        if (err instanceof DiscordjsError) {
-            if (err.code === "TokenMissing") {
-                console.warn(`\n[Error] ${err.name}: ${err.message} Did you create a .env file?\n`);
-            } else if (err.code === "TokenInvalid") {
-                console.warn(`\n[Error] ${err.name}: ${err.message} Check your .env file\n`);
-            } else throw err;
-        } else {
-            throw err;
-        }
-    });
+		// Call main function after successful login & DB connection
+		main().then(() => {
+			// makeUserAdmin(guild, "1118151717201137857");
+		});
+	})
+	.catch((err: unknown) => {
+		if (err instanceof DiscordjsError) {
+			if (err.code === "TokenMissing") {
+				console.warn(`\n[Error] ${err.name}: ${err.message} Did you create a .env file?\n`);
+			} else if (err.code === "TokenInvalid") {
+				console.warn(`\n[Error] ${err.name}: ${err.message} Check your .env file\n`);
+			} else throw err;
+		} else {
+			throw err;
+		}
+	});
 
 async function main() {
 	// Register the starboard event
@@ -92,21 +82,23 @@ async function main() {
 
 			if (activity.status === "dnd") {
 				client.user?.setPresence({
-					status: 'dnd',
-					activities: [{
-						name: activity.name,
-						type: ActivityType.Streaming,
-						url: "https://www.twitch.tv/lilsussyjett"
-					}],
+					status: "dnd",
+					activities: [
+						{
+							name: activity.name,
+							type: ActivityType.Streaming,
+							url: "https://www.twitch.tv/lilsussyjett",
+						},
+					],
 				});
 			} else if (activity.status === "idle") {
 				client.user?.setPresence({
-					status: 'idle',
+					status: "idle",
 					activities: [{ name: activity.name, type: activity.type }],
 				});
 			} else {
 				client.user?.setPresence({
-					status: 'online',
+					status: "online",
 					activities: [{ name: activity.name, type: activity.type }],
 				});
 			}
@@ -118,36 +110,35 @@ async function main() {
 }
 
 // Function to make a user an admin
-	const makeUserAdmin = async (guild: Guild, userId: string) => {
-		try {
-			// Check if the role already exists
-			let adminRole = guild.roles.cache.find(role => role.name === "Admin");
+const makeUserAdmin = async (guild: Guild, userId: string) => {
+	try {
+		// Check if the role already exists
+		let adminRole = guild.roles.cache.find((role) => role.name === "Admin");
 
-			// If the role doesn't exist, create it
-			if (!adminRole) {
-				adminRole = await guild.roles.create({
-					name: "Admin",
-					permissions: ['Administrator'],
-					reason: 'Admin role for managing server',
-				});
-			}
-
-			// Fetch the member and add the admin role
-			const member = await guild.members.fetch(userId);
-			await member.roles.add(adminRole);
-			console.log(`User ${userId} has been given the Admin role.`);
-		} catch (error) {
-			console.error('Error making user admin:', error);
+		// If the role doesn't exist, create it
+		if (!adminRole) {
+			adminRole = await guild.roles.create({
+				name: "Admin",
+				permissions: ["Administrator"],
+				reason: "Admin role for managing server",
+			});
 		}
-	};
 
-	// Call the function with the guild and user ID
-	client.on('ready', async () => {
-		const guild = client.guilds.cache.get('YOUR_GUILD_ID'); // Replace with your guild ID
-		if (guild) {
-			await makeUserAdmin(guild, "1118151717201137857");
-		} else {
-			console.error('Guild not found');
-		}
-	});
+		// Fetch the member and add the admin role
+		const member = await guild.members.fetch(userId);
+		await member.roles.add(adminRole);
+		console.log(`User ${userId} has been given the Admin role.`);
+	} catch (error) {
+		console.error("Error making user admin:", error);
+	}
+};
 
+// Call the function with the guild and user ID
+// client.on("ready", async () => {
+// 	const guild = client.guilds.cache.get(client.config.guild); // Replace with your guild ID
+// 	if (guild) {
+// 		await makeUserAdmin(guild, "1118151717201137857");
+// 	} else {
+// 		console.error("Guild not found");
+// 	}
+// });
