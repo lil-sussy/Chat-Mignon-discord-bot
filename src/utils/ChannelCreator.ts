@@ -75,14 +75,14 @@ export async function createTicketChannel(params: {
   // Allow listed users
   
   overwrites.push({
-    id: userIds[threadIndex ? threadIndex : 0],
+    id: userIds[threadIndex ?? 0],
     allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
     type: OverwriteType.Member,
   });
 
   // Create channel
   const channel = await guild.channels.create({
-    name: channelNames[threadIndex ? threadIndex : 0],
+    name: channelNames[threadIndex ?? 0],
     type: ChannelType.GuildText,
     parent: category.id,
     permissionOverwrites: overwrites,
@@ -154,7 +154,7 @@ export async function createTicketChannel(params: {
           whoCanDelete: "mods",
           hasSecondButton: false,
           userIds: userIds,
-          threadIndex: threadIndex ? threadIndex + 1 : 0,
+          threadIndex: (threadIndex ?? 0) + 1,
           content: "New ticket channel regarding the reported user.",
         });
       }
