@@ -15,10 +15,10 @@ const TicketCommand: ChatInputCommand = {
       subcommand
         .setName("create")
         .setDescription("Create a ticket for specified users")
-        .addStringOption((option) =>
+        .addUserOption((option) =>
           option
-            .setName("user_ids")
-            .setDescription("Comma-separated list of user IDs")
+            .setName("user")
+            .setDescription("The user to create a ticket for")
             .setRequired(true)
         )
     )
@@ -26,10 +26,10 @@ const TicketCommand: ChatInputCommand = {
       subcommand
         .setName("add")
         .setDescription("Add a user to the current ticket channel")
-        .addStringOption((option) =>
+        .addUserOption((option) =>
           option
-            .setName("user_id")
-            .setDescription("User ID to add to the ticket")
+            .setName("user")
+            .setDescription("The user to add to the ticket")
             .setRequired(true)
         )
     )
@@ -39,14 +39,14 @@ const TicketCommand: ChatInputCommand = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "create") {
-      const userIdsString = interaction.options.getString("user_ids", true);
-      const userIds = userIdsString.split(",").map((id) => id.trim());
+      const user = interaction.options.getUser("user", true);
+      const userIds = [user.id];
 
       try {
         await createTicketChannel({
           client,
           guild: interaction.guild!,
-          channelNames: [`ticket-${interaction.user.username}-${userIds[0]}`, `ticket-${userIds[0]}`],
+          channelNames: [`ticket-${interaction.user.username}-${user.username}`, `ticket-${user.username}`],
           categoryName: "Tickets", // Ensure this category exists
           whoCanDelete: "mods",
           hasSecondButton: false,
@@ -66,7 +66,7 @@ const TicketCommand: ChatInputCommand = {
         });
       }
     } else if (subcommand === "add") {
-      const userId = interaction.options.getString("user_id", true);
+      const user = interaction.options.getUser("user", true);
       const channel = interaction.channel;
 
       if (!channel || channel.type !== ChannelType.GuildText) {
@@ -78,12 +78,12 @@ const TicketCommand: ChatInputCommand = {
       }
 
       try {
-        await channel.permissionOverwrites.create(userId, {
+        await channel.permissionOverwrites.create(user.id, {
           ViewChannel: true,
         });
 
         await interaction.reply({
-          content: `User <@${userId}> has been added to the ticket channel.`,
+          content: `User <@${user.id}> has been added to the ticket channel.`,
           ephemeral: true,
         });
       } catch (error) {
