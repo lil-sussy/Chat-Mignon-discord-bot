@@ -30,7 +30,10 @@ const messageCreateEvent: Event = {
 
 		// New pattern for "quoi" with reaction "feur"
 		const quoiPattern = /quoi/i;
-		if (quoiPattern.test(message.content)) {
+		const pourquoiPattern = /pourquoi/i;
+		if (pourquoiPattern.test(message.content)) {
+			await message.reply("pour feur mec");
+		} else if (quoiPattern.test(message.content)) {
 			await message.reply("feur");
 		}
 	},
