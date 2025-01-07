@@ -29,13 +29,13 @@ const messageCreateEvent: Event = {
 		}
 
 		// New pattern for "quoi" with reaction "feur"
-		const quoiPattern = /quoi(?=\s|$|[^\w])/i;
-		const pourquoiPattern = /pour.*quoi/i;
-		if (pourquoiPattern.test(message.content)) {
-			await message.reply("pour feur mec");
-		} else if (quoiPattern.test(message.content)) {
-			await message.reply("feur");
-		}
+		// const quoiPattern = /quoi(?=\s|$|[^\w])/i;
+		// const pourquoiPattern = /pour.*quoi/i;
+		// if (pourquoiPattern.test(message.content)) {
+		// 	await message.reply("pour feur mec");
+		// } else if (quoiPattern.test(message.content)) {
+		// 	await message.reply("feur");
+		// }
 	},
 };
 
