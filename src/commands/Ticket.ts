@@ -44,15 +44,15 @@ const TicketCommand: ChatInputCommand = {
 
       try {
         await createTicketChannel({
-          client,
-          guild: interaction.guild!,
-          channelNames: [`ticket-${interaction.user.username}-${user.username}`, `ticket-${user.username}`],
-          categoryName: "Tickets", // Ensure this category exists
-          whoCanDelete: "mods",
-          hasSecondButton: false,
-          userIds,
-          content: "This is a ticket channel.",
-        });
+					client,
+					guild: interaction.guild!,
+					channelNames: [`ticket-${interaction.user.username}-${user.username}`, `ticket-${user.username}`],
+					categoryName: client.config.moderationCategoryName, // Ensure this category exists
+					whoCanDelete: "mods",
+					hasSecondButton: false,
+					userIds,
+					content: "This is a ticket channel.",
+				});
 
         await interaction.reply({
           content: "Ticket channel created successfully.",
