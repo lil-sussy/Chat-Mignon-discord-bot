@@ -1,17 +1,6 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  ChannelType,
-  PermissionFlagsBits,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
-  APIActionRowComponent,
-  ButtonInteraction,
-  CacheType,
-  MessageComponentInteraction,
-  MessageComponentType,
-  GuildMember,
 } from "discord.js";
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces/Command";

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import UserLink from "../models/FetlifeUserLink";
 import { fetchRSVPfromAllParisEvents } from "../features/fetchFetlifeEvents";
@@ -141,7 +141,7 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 
 		if (unmentionedUsers.length > 0) {
 			const newUserMentions = unmentionedUsers.map((u) => `<@${u.discordId}>`).join(", ");
-			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}`);
+			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}\n-#Stop pinging me ? use /fetlife revoke`);
 		}
 	}
 	return untreatedEventIDs;
@@ -162,7 +162,7 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 				{ name: "Club", value: item.event.location, inline: true },
 			)
 			.setColor(client.config.colors.embed)
-      .setImage(item.event.cover_image);
+			.setImage(item.event.cover_image);
 
 		const eventEndDate = new Date(item.event.end_date_time);
 		const currentDate = new Date();
@@ -190,11 +190,22 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 		});
 		console.log(`Started thread: ${thread.id}`);
 
+		// Create a button for adding to calendar
+		const calendarButton = new ButtonBuilder()
+			.setLabel("Add to Calendar")
+			.setStyle(ButtonStyle.Link)
+			.setURL(`https://fetlife.com/events/${item.event.id}/calendar.ics?source=Event+Show`);
+
+		const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(calendarButton);
+
+		// Send the button message
+		await thread.send({ components: [actionRow] });
+
 		const userMentions = item.rsvp.map((user) => `<@${user.discordId}>`);
 		const maxMentionsPerMessage = 50;
 		for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
 			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
-			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}`);
+			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}\n-#Stop pinging me ? use /fetlife revoke`);
 		}
 	}
 }
@@ -218,6 +229,11 @@ const fetlifeCommand: ChatInputCommand = {
 						.setDescription("Your Fetlife.com username")
 						.setRequired(true)
 				)
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName("revoke")
+				.setDescription("Revoke your Fetlife account link")
 		),
 	global: false,
 
@@ -276,6 +292,20 @@ const fetlifeCommand: ChatInputCommand = {
 			} catch (error) {
 				console.error("Error linking Fetlife account:", error);
 				await interaction.reply({ content: "An error occurred while linking your Fetlife account.", ephemeral: true });
+			}
+		} else if (subcommand === "revoke") {
+			try {
+				const discordId = interaction.user.id;
+
+				const result = await UserLink.findOneAndDelete({ discordId });
+				if (result) {
+					await interaction.reply({ content: "Your Fetlife account link has been successfully revoked.", ephemeral: true });
+				} else {
+					await interaction.reply({ content: "No linked Fetlife account found to revoke.", ephemeral: true });
+				}
+			} catch (error) {
+				console.error("Error revoking Fetlife account link:", error);
+				await interaction.reply({ content: "An error occurred while revoking your Fetlife account link.", ephemeral: true });
 			}
 		}
 	}
