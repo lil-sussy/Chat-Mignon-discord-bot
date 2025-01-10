@@ -246,14 +246,14 @@ const fetlifeCommand: ChatInputCommand = {
 
 					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
 					if (forumChannel && forumChannel instanceof ForumChannel) {
-            console.log(matchedEvents.map((e) => e.event.id));
+						console.log(matchedEvents.map((e) => e.event.id));
 						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
-            console.log(untreatedEventIDs);
+						console.log(untreatedEventIDs);
 						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
 					}
 				}
 
-					await interaction.editReply({ content: "RSVP list has been successfully refreshed." });
+				await interaction.editReply({ content: "RSVP list has been successfully refreshed." });
 			} catch (error) {
 				console.error("Error during refresh command execution:", error);
 				await interaction.editReply({ content: "An error occurred while refreshing the RSVP list." });
@@ -269,6 +269,10 @@ const fetlifeCommand: ChatInputCommand = {
 					{ upsert: true, new: true }
 				);
 				await interaction.reply({ content: `Your Fetlife account has been linked as ${fetlifeUsername}.`, ephemeral: true });
+
+				// Trigger the refresh logic after linking
+				await interaction.followUp({ content: "Refreshing RSVP list...", ephemeral: true });
+				await this.execute(client, interaction); // Call the refresh logic
 			} catch (error) {
 				console.error("Error linking Fetlife account:", error);
 				await interaction.reply({ content: "An error occurred while linking your Fetlife account.", ephemeral: true });
