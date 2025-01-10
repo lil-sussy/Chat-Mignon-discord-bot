@@ -25,18 +25,7 @@ const axiosInstance: AxiosInstance = axios.create({
 	},
 });
 axiosCookieJarSupport(axiosInstance);
-
-interface Event {
-	id: number;
-	// Add other properties if needed
-}
-
-interface UserData {
-	userID: string | null;
-	username: string | null;
-}
-
-const extractUserData = (html: string): UserData[] => {
+const extractUserData = (html: string): FetlifeUser[] => {
 	const divs: string[] = [];
 	const regex = /<div class="sm:w-1\/2 w-full px-1">([\s\S]*?)<\/div>/g;
 	let match;
@@ -57,11 +46,11 @@ const extractUserData = (html: string): UserData[] => {
 	});
 };
 
-async function fetchEventsNear(): Promise<Event[]> {
+async function fetchEventsNear(page: number): Promise<FetlifeEvent[]> {
 	try {
 		const response = await axiosInstance.get('/events/near', {
 			params: {
-				page: 1,
+				page,
 				'categories[]': 'bdsm_party',
 				mapbox_location_id: 'locality.510541',
 				'search[long]': 2.383964,
@@ -94,23 +83,24 @@ async function fetchEventsNear(): Promise<Event[]> {
 	}
 }
 
-async function fetchEventRsvps(eventID: number): Promise<UserData[]> {
+async function fetchEventRsvps(eventID: number): Promise<FetlifeUser[]> {
 	try {
 		const response = await axiosInstance.get(`/events/${eventID}/rsvps`, {
 			headers: {
-				'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0',
-				Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-				'Accept-Language': 'en-US,en;q=0.5',
-				'Accept-Encoding': 'gzip, deflate, br, zstd',
+				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0",
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				"Accept-Language": "en-US,en;q=0.5",
+				"Accept-Encoding": "gzip, deflate, br, zstd",
 				Referer: `https://fetlife.com/events/${eventID}`,
-				'Upgrade-Insecure-Requests': '1',
-				'Sec-Fetch-Dest': 'document',
-				'Sec-Fetch-Mode': 'navigate',
-				'Sec-Fetch-Site': 'same-origin',
-				'Sec-Fetch-User': '?1',
-				Connection: 'keep-alive',
-				Cookie: 'language=en; _cfuvid=bGHXyKTYlobwXS_7t6yMj6Y8qgNdotK9Nc6mLLi2PSA-1736477463445-0.0.1.1-604800000; fetlife_pwa=none; _fl_sessionid=653d1fd8dcdb09797e3de869763d5a7b; __cf_bm=NFK4ONvbhGa.sSZ.Quz_OEONDBz3uq6kxVlH.lEIlLE-1736477463-1.0.1.1-SqhiEvO3opeOXClz56lvLts6WedZBIC4FmMq2YprsTr62htULj1R9nPi9Mru0oXwfoKLXe8DbokpPDZsrUUo0Z9kVLwUesWoGZB4EDRA7ss; cf_clearance=RrdV0ivIzVrhanYjA1KvjY2Hfeu_miH2CGp9qCyN15Q-1736477464-1.2.1.1-RD7FoF1xDCGxosBpHcrplmoCG3F65zcgraUh7GtgU6hyqzASW1aDOm4x_0F3uG9LUoFDAgX.7281oiMgpIm_12E1YqxoH8QtmIxydbr31VON_.GxuWZOvRE_hIMGNGoEnwH3LDMw6K_OuQQkWCm2Uhb6OI3YGzoGkUx_KmIKYkvLTg427FX.pH.A7E.rtxQpwe_wKVoPOEHqY27WnAJ43g4BNi_wVt4zmIYPEGIOYnPsCxDV0IaHt_eZDyqOMFShlHVJrwqrnPB0Yk7eqnab1hfEVBJL3Tel9sQi2U0rm2DqsiXG4BiLEteNr_pFVwu7mlB73Drymmoo2Td5h2Rfhw; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3lNRGd3TkRjd05WMHNJaVF5WVNReE1pUTFUM052T0VsSlZVUnVhVkI0ZWs4dk5tNXhMbTVsSWl3aU1UY3pOalEzTnpRNE15NDNOakEzTWpNMElsMD0iLCJleHAiOiIyMDI1LTAxLTI0VDAyOjUxOjIzLjc2MFoiLCJwdXIiOiJjb29raWUucmVtZW1iZXJfdXNlcl90b2tlbiJ9fQ%3D%3D--07fb71169dd175450bf671260464ef82e3a698db'
-			}
+				"Upgrade-Insecure-Requests": "1",
+				"Sec-Fetch-Dest": "document",
+				"Sec-Fetch-Mode": "navigate",
+				"Sec-Fetch-Site": "same-origin",
+				"Sec-Fetch-User": "?1",
+				Connection: "keep-alive",
+				Cookie:
+					"language=en; _cfuvid=bGHXyKTYlobwXS_7t6yMj6Y8qgNdotK9Nc6mLLi2PSA-1736477463445-0.0.1.1-604800000; fetlife_pwa=none; _fl_sessionid=653d1fd8dcdb09797e3de869763d5a7b; __cf_bm=NFK4ONvbhGa.sSZ.Quz_OEONDBz3uq6kxVlH.lEIlLE-1736477463-1.0.1.1-SqhiEvO3opeOXClz56lvLts6WedZBIC4FmMq2YprsTr62htULj1R9nPi9Mru0oXwfoKLXe8DbokpPDZsrUUo0Z9kVLwUesWoGZB4EDRA7ss; cf_clearance=RrdV0ivIzVrhanYjA1KvjY2Hfeu_miH2CGp9qCyN15Q-1736477464-1.2.1.1-RD7FoF1xDCGxosBpHcrplmoCG3F65zcgraUh7GtgU6hyqzASW1aDOm4x_0F3uG9LUoFDAgX.7281oiMgpIm_12E1YqxoH8QtmIxydbr31VON_.GxuWZOvRE_hIMGNGoEnwH3LDMw6K_OuQQkWCm2Uhb6OI3YGzoGkUx_KmIKYkvLTg427FX.pH.A7E.rtxQpwe_wKVoPOEHqY27WnAJ43g4BNi_wVt4zmIYPEGIOYnPsCxDV0IaHt_eZDyqOMFShlHVJrwqrnPB0Yk7eqnab1hfEVBJL3Tel9sQi2U0rm2DqsiXG4BiLEteNr_pFVwu7mlB73Drymmoo2Td5h2Rfhw; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3lNRGd3TkRjd05WMHNJaVF5WVNReE1pUTFUM052T0VsSlZVUnVhVkI0ZWs4dk5tNXhMbTVsSWl3aU1UY3pOalEzTnpRNE15NDNOakEzTWpNMElsMD0iLCJleHAiOiIyMDI1LTAxLTI0VDAyOjUxOjIzLjc2MFoiLCJwdXIiOiJjb29raWUucmVtZW1iZXJfdXNlcl90b2tlbiJ9fQ%3D%3D--07fb71169dd175450bf671260464ef82e3a698db",
+			},
 		});
 
 		const html = response.data;
@@ -122,21 +112,85 @@ async function fetchEventRsvps(eventID: number): Promise<UserData[]> {
 		return [];
 	}
 }
+export interface FetlifeEvent {
+	id: number;
+	name: string;
+	tagline: string;
+	description: string;
+	cost: string;
+	category: string;
+	friendly_category: string;
+	dress_code: string;
+	start_date_time: string;
+	end_date_time: string;
+	timezone: string;
+	type: string;
+	privacy: string;
+	canceled: boolean;
+	passed: boolean;
+	private_address: boolean;
+	private_link: boolean;
+	private_rsvps: boolean;
+	interested_count: number;
+	attendance: null | string;
+	notification_subscription: null | string;
+	cover_image: string;
+	author: {
+		id: number;
+	};
+	address: string;
+	latitude: null | number;
+	longitude: null | number;
+	location: string;
+	interested_friends: any[];
+	place: {
+		name: string;
+		full_name: string;
+		timezone: string;
+		type: string[];
+		location: [number, number];
+	};
+}
+
+export interface FetlifeUser {
+	userID: string | null;
+	username: string | null;
+}
+
+
+interface item {
+	event: FetlifeEvent;
+	rsvp: FetlifeUser[];
+}
 
 export async function fetchRSVPfromAllParisEvents() {
 	try {
-		const data = await fetchEventsNear();
+		const allEvents: FetlifeEvent[] = [];
 
-		const events: UserData[][] = [];
-
-		for (const event of data) {
-			const eventID = event.id; // Assuming each event object has an 'id' property
-			const usernames = await fetchEventRsvps(eventID);
-			events.push(usernames);
+		for (let page = 1; page <= 10; page++) {
+			const events = await fetchEventsNear(page);
+			if (events.length === 0) {
+				console.log(`No events found on page ${page}, stopping.`);
+				break;
+			}
+			allEvents.push(...events);
 		}
 
-		console.log(events);
+		const eventItems: item[] = [];
+
+		for (const event of allEvents) {
+			const item: item = {
+				event: event,
+				rsvp: []
+			};
+			const eventID = event.id; // Assuming each event object has an 'id' property
+			const usernames = await fetchEventRsvps(eventID);
+			item.rsvp = usernames;
+			eventItems.push(item);
+		}
+    return eventItems;
 	} catch (error) {
 		console.error("Error fetching the login page:", (error as Error).message);
+    return null;
 	}
 }
