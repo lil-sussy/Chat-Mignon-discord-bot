@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, TextChannel, NewsChannel, ForumChannel } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import UserLink from "../models/FetlifeUserLink";
 import { fetchRSVPfromAllParisEvents } from "../features/fetchFetlifeEvents";
@@ -6,18 +6,25 @@ import ExtendedClient from "../classes/Client";
 import { hasModPermission } from "../features/HasModPermissions";
 import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents";
 
+enum ThreadAutoArchiveDuration {
+	OneHour = 60,      // 1 hour
+	OneDay = 1440,     // 1 day
+	ThreeDays = 4320,  // 3 days
+	OneWeek = 10080    // 1 week
+}
+
 interface item {
 	event: FetlifeEvent;
 	rsvp: FetlifeUser[];
 }
 
-function parseDescription(description: string): string {
-	const euroLines = description
-		.split('\n')
-		.filter(line => line.includes('€'))
-		.join('\n');
+function parseDescription(event: FetlifeEvent): string {
+	const euroLines = event.cost ?? event.description
+		.split("\n")
+		.filter((line) => line.includes("€"))
+		.join("\n");
 
-	const combinedDescription = `Price:\n${euroLines}\n\n${description}`;
+	const combinedDescription = `Link: https://fetlife.com/events/${event.id}\n\nPrice:\n${euroLines}\n\n${event.description}`;
 	return combinedDescription.substring(0, 1024);
 }
 
@@ -32,6 +39,164 @@ function formatToParisTime(dateString: string): string {
 		minute: '2-digit',
 	};
 	return new Intl.DateTimeFormat('en-GB', options).format(date);
+}
+
+async function fetchAndMatchUsers(results: item[], userLinks: any[]): Promise<item[]> {
+	const matchedEvents = [];
+	console.log("Matching users with events...");
+
+	for (const item of results) {
+		const matchedUsers: FetlifeUser[] = [];
+
+		for (const rsvpUser of item.rsvp) {
+			const userLink = userLinks.find(link => link.fetlifeID === rsvpUser.userID || link.fetlifeUsername === rsvpUser.username);
+			if (userLink) {
+				await UserLink.updateOne(
+					{ fetlifeUsername: rsvpUser.username },
+					{ $set: { fetlifeID: rsvpUser.userID } }
+				);
+
+				const matchedUser: FetlifeUser = {
+					userID: rsvpUser.userID,
+					username: rsvpUser.username,
+					discordId: userLink.discordId
+				};
+
+				matchedUsers.push(matchedUser);
+
+				// Update the rsvp list with discordId
+				rsvpUser.discordId = userLink.discordId;
+			}
+		}
+
+		if (matchedUsers.length > 0) {
+			matchedEvents.push({
+				event: item.event,
+				rsvp: matchedUsers
+			});
+		}
+	}
+	return matchedEvents;
+}
+
+async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: item[], client: ExtendedClient) {
+	const untreatedEventIDs: number[] = matchedEvents.map((e) => e.event.id);
+	console.log("Checking existing threads for updates...");
+
+	const fetchedThreads = await forumChannel.threads.fetchActive();
+	for (const [threadId, existingThread] of fetchedThreads.threads) {
+		// Extract the eventID from the thread name, if you stored it last time.
+		const match = existingThread.name.match(/.* - .* - (\d+)$/);
+		if (!match) continue;
+
+		const threadEventId = Number(match[1]);
+
+		const currentItem = matchedEvents.find((e) => e.event.id === threadEventId);
+		if (!currentItem) {
+      existingThread.setArchived(true);
+			continue;
+		}
+
+		// 1) Check if the event has ended
+		const currentDate = new Date();
+		const eventEndDate = new Date(currentItem.event.end_date_time);
+		if (currentDate > eventEndDate) {
+			await existingThread.setArchived(true);
+			continue;
+		}
+
+		// 2) Update thread message if event details have changed
+		const firstMessage = (await existingThread.messages.fetch({ limit: 1 })).first();
+		if (firstMessage && firstMessage.author.id === client.user?.id) {
+			const updatedEmbed = new EmbedBuilder()
+				.setTitle(currentItem.event.name)
+				.setDescription(parseDescription(currentItem.event))
+				.addFields({ name: "Start Date", value: formatToParisTime(currentItem.event.start_date_time), inline: true }, { name: "End Date", value: formatToParisTime(currentItem.event.end_date_time), inline: true }, { name: "Location", value: currentItem.event.place.full_name, inline: true }, { name: "Club", value: currentItem.event.location, inline: true })
+				.setColor(client.config.colors.embed)
+				.setImage(currentItem.event.cover_image);
+
+			await firstMessage.edit({
+				embeds: [updatedEmbed],
+			});
+		}
+
+		// 3) Check if new users have registered
+		const botMessages = await existingThread.messages.fetch({ limit: 50 });
+		const existingMentions = new Set<string>();
+		for (const [, message] of botMessages) {
+			if (message.author.id === client.user?.id) {
+				const userIdMatches = message.content.match(/<@(\d+)>/g) || [];
+				userIdMatches.forEach((mention) => {
+					existingMentions.add(mention);
+				});
+			}
+		}
+
+		const threadMatchedUsers = currentItem.rsvp.filter((u) => u.discordId) || [];
+		const unmentionedUsers = threadMatchedUsers.filter((u) => {
+			const mention = `<@${u.discordId}>`;
+			return !existingMentions.has(mention);
+		});
+
+		if (unmentionedUsers.length > 0) {
+			const newUserMentions = unmentionedUsers.map((u) => `<@${u.discordId}>`).join(", ");
+			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}`);
+		}
+    untreatedEventIDs.filter(id => id !== currentItem.event.id)
+	}
+	return untreatedEventIDs;
+}
+
+async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: number[], matchedEvents: item[], client: ExtendedClient) {
+	console.log("Creating new threads...");
+	for (const eventID of untreatedEventIDs) {
+		const item = matchedEvents.find((e) => e.event.id === eventID);
+		if (!item) return;
+		const embed = new EmbedBuilder()
+			.setTitle(item.event.name)
+			.setDescription(parseDescription(item.event))
+			.addFields(
+				{ name: "Start Date", value: formatToParisTime(item.event.start_date_time), inline: true },
+				{ name: "End Date", value: formatToParisTime(item.event.end_date_time), inline: true },
+				{ name: "Location", value: item.event.place.full_name, inline: true },
+				{ name: "Club", value: item.event.location, inline: true },
+			)
+			.setColor(client.config.colors.embed)
+      .setImage(item.event.cover_image);
+
+		const eventEndDate = new Date(item.event.end_date_time);
+		const currentDate = new Date();
+		const duration = Math.floor((eventEndDate.getTime() - currentDate.getTime()) / (1000 * 60));
+
+		let autoArchiveDuration: number;
+		if (duration <= ThreadAutoArchiveDuration.OneHour) {
+			autoArchiveDuration = ThreadAutoArchiveDuration.OneHour;
+		} else if (duration <= ThreadAutoArchiveDuration.OneDay) {
+			autoArchiveDuration = ThreadAutoArchiveDuration.OneDay;
+		} else if (duration <= ThreadAutoArchiveDuration.ThreeDays) {
+			autoArchiveDuration = ThreadAutoArchiveDuration.ThreeDays;
+		} else {
+			autoArchiveDuration = ThreadAutoArchiveDuration.OneWeek;
+		}
+
+		const thread = await forumChannel.threads.create({
+			autoArchiveDuration: autoArchiveDuration,
+			name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${item.event.name} - ${item.event.id}`,
+			message: {
+				embeds: [embed],
+			},
+			// @ts-ignore
+			icon: item.event.cover_image
+		});
+		console.log(`Started thread: ${thread.id}`);
+
+		const userMentions = item.rsvp.map((user) => `<@${user.discordId}>`);
+		const maxMentionsPerMessage = 50;
+		for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
+			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
+			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}`);
+		}
+	}
 }
 
 const fetlifeCommand: ChatInputCommand = {
@@ -63,10 +228,8 @@ const fetlifeCommand: ChatInputCommand = {
 		if (subcommand === "refresh") {
 			try {
 				await interaction.deferReply({ ephemeral: true });
-				console.log("Deferred reply for refresh command.");
 
 				const hasPermission = await hasModPermission(client, interaction);
-				console.log(`User has permission: ${hasPermission}`);
 				if (!hasPermission) {
 					await interaction.editReply({ content: "You do not have permission to execute this command." });
 					return;
@@ -76,75 +239,19 @@ const fetlifeCommand: ChatInputCommand = {
 				console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
 
 				if (results) {
-					const matchedEvents = [];
 					const userLinks = await UserLink.find({});
 					console.log(`Fetched user links from DB: ${userLinks.length} users`);
 
-					for (const item of results) {
-						console.log(`Processing event: ${item.event.name}`);
-						const matchedUsers = [];
+					const matchedEvents = await fetchAndMatchUsers(results, userLinks);
 
-						for (const userLink of userLinks) {
-							const rsvpUser = item.rsvp.find(rsvp => rsvp.userID === userLink.fetlifeID || rsvp.username === userLink.fetlifeUsername);
-							if (rsvpUser) {
-								console.log(`Matched user: ${rsvpUser.username}`);
-								await UserLink.updateOne(
-									{ fetlifeUsername: rsvpUser.username },
-									{ $set: { fetlifeID: rsvpUser.userID } }
-								);
-
-								matchedUsers.push({
-									discordId: userLink.discordId,
-									username: rsvpUser.username
-								});
-							}
-						}
-
-						if (matchedUsers.length > 0) {
-							console.log(`Matched users for event: ${matchedUsers.length}`);
-							matchedEvents.push({
-								event: item.event,
-								users: matchedUsers
-							});
-
-							const embed = new EmbedBuilder()
-								.setTitle(item.event.name)
-								.setDescription(parseDescription(item.event.description))
-								.addFields(
-									{ name: "Start Date", value: formatToParisTime(item.event.start_date_time), inline: true },
-									{ name: "End Date", value: formatToParisTime(item.event.end_date_time), inline: true },
-									{ name: "Location", value: item.event.location, inline: true }
-								)
-								.setColor(client.config.colors.embed);
-
-							const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
-							if (forumChannel && forumChannel instanceof ForumChannel) {
-								console.log(`Creating thread in forum channel: ${forumChannel.id}`);
-								const thread = await forumChannel.threads.create({
-									name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${item.event.name} - ${item.event.id}`,
-									message: {
-										content: `Event: ${item.event.name}`,
-										embeds: [embed],
-									},
-								});
-								console.log(`Started thread: ${thread.id}`);
-
-								const userMentions = matchedUsers.map((user) => `<@${user.discordId}>`);
-								const maxMentionsPerMessage = 50;
-								for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
-									const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
-									await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}`);
-									console.log(`Sent mentions chunk: ${mentionsChunk}`);
-								}
-							} else {
-								console.log(`Could not find forum channel to create thread: ${client.config.parisEventChannelId}`);
-							}
-						}
+					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
+					if (forumChannel && forumChannel instanceof ForumChannel) {
+						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
+						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
 					}
 				}
 
-				await interaction.editReply({ content: "RSVP list has been successfully refreshed." });
-				console.log("RSVP list refresh completed.");
+					await interaction.editReply({ content: "RSVP list has been successfully refreshed." });
 			} catch (error) {
 				console.error("Error during refresh command execution:", error);
 				await interaction.editReply({ content: "An error occurred while refreshing the RSVP list." });
@@ -153,7 +260,6 @@ const fetlifeCommand: ChatInputCommand = {
 			try {
 				const fetlifeUsername = interaction.options.getString("username", true);
 				const discordId = interaction.user.id;
-				console.log(`Linking Fetlife account: ${fetlifeUsername} for Discord ID: ${discordId}`);
 
 				await UserLink.findOneAndUpdate(
 					{ discordId },
@@ -161,7 +267,6 @@ const fetlifeCommand: ChatInputCommand = {
 					{ upsert: true, new: true }
 				);
 				await interaction.reply({ content: `Your Fetlife account has been linked as ${fetlifeUsername}.`, ephemeral: true });
-				console.log("Fetlife account linked successfully.");
 			} catch (error) {
 				console.error("Error linking Fetlife account:", error);
 				await interaction.reply({ content: "An error occurred while linking your Fetlife account.", ephemeral: true });

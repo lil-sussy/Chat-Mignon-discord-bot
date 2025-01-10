@@ -42,7 +42,7 @@ const extractUserData = (html: string): FetlifeUser[] => {
 		const usernameMatch = div.match(/title=\"(.*?)\"/);
 		const username = usernameMatch ? usernameMatch[1] : null;
 
-		return { userID, username };
+		return { userID, username, discordId: null };
 	});
 };
 
@@ -155,6 +155,7 @@ export interface FetlifeEvent {
 export interface FetlifeUser {
 	userID: string | null;
 	username: string | null;
+	discordId: string | null;
 }
 
 
