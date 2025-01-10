@@ -1,4 +1,4 @@
-import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role, ChatInputCommandInteraction, CommandInteraction } from "discord.js";
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role, ChatInputCommandInteraction, CommandInteraction, ForumChannel } from "discord.js";
 import ExtendedClient from "./classes/Client";
 import { config } from "dotenv";
 import StarboardEvent from "./events/StarboardEvent";
@@ -6,8 +6,10 @@ import StarboardCommand from "./commands/Starboard";
 import mongoose from "mongoose";
 import StarboardSetting from "./models/StarboardSetting";
 import Confession from "./models/Confession"; // for storing confessions
-import fetlifeCommand from "./commands/Fetlife"; // Ensure this import is correct
+import { fetchRSVPfromAllParisEvents } from "./features/fetchFetlifeEvents";
+import fetlifeCommand, { fetchAndMatchUsers, updateExistingThreads, createNewThreads } from "./commands/Fetlife"; // Importing necessary functions
 import GoonCommand from "./commands/Goon";
+import UserLink from "./models/FetlifeUserLink";
 
 // Load .env file contents
 config();
@@ -52,28 +54,27 @@ async function main() {
 	// Schedule the fetlife refresh command to run every hour
 	setInterval(async () => {
 		try {
-			const guild = await client.guilds.fetch(client.config.guild);
-			const channel = await guild.channels.fetch(client.config.parisEventChannelId);
+			try {
+				const results = await fetchRSVPfromAllParisEvents();
+				console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
 
-			if (channel && channel.isTextBased()) {
-				const mockInteraction = {
-					client: client,
-					guild: guild,
-					channel: channel,
-					user: client.user,
-					options: {
-						getSubcommand: () => "refresh",
-					},
-					deferReply: async () => {},
-					editReply: async (message: any) => console.log(message),
-				} as unknown as ChatInputCommandInteraction;
+				if (results) {
+					const userLinks = await UserLink.find({});
+					console.log(`Fetched user links from DB: ${userLinks.length} users`);
 
-				await fetlifeCommand.execute(client, mockInteraction);
-				console.log("Executed fetlife refresh command.");
+					const matchedEvents = await fetchAndMatchUsers(results, userLinks);
 
-				// Send a DM to the specified user
-				const user = await client.users.fetch("318114986222157824");
-				await user.send("updating fetlife");
+					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
+					if (forumChannel && forumChannel instanceof ForumChannel) {
+						console.log(matchedEvents.map((e) => e.event.id));
+						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
+						console.log(untreatedEventIDs);
+						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
+						console.log("done refreshing");
+					}
+				}
+			} catch (error) {
+				console.error("Error during refresh command execution:", error);
 			}
 		} catch (error) {
 			console.error("Error executing scheduled fetlife refresh:", error);
