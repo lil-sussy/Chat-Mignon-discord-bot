@@ -53,6 +53,7 @@ interface Config {
 	};
 	moderatorRoleName: string;
 	updateChannelId: string;
+	parisEventChannelId: string;
 	catEmojis: string[];
 }
 /**

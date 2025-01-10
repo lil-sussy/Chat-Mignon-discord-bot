@@ -1,14 +1,37 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, TextChannel, NewsChannel, ForumChannel } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
-import UserLink from "../models/FetlifeUserLink"; // Import the new model
+import UserLink from "../models/FetlifeUserLink";
 import { fetchRSVPfromAllParisEvents } from "../features/fetchFetlifeEvents";
 import ExtendedClient from "../classes/Client";
 import { hasModPermission } from "../features/HasModPermissions";
-import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents"; // Adjust the path as necessary
+import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents";
 
 interface item {
 	event: FetlifeEvent;
 	rsvp: FetlifeUser[];
+}
+
+function parseDescription(description: string): string {
+	const euroLines = description
+		.split('\n')
+		.filter(line => line.includes('€'))
+		.join('\n');
+
+	const combinedDescription = `Price:\n${euroLines}\n\n${description}`;
+	return combinedDescription.substring(0, 1024);
+}
+
+function formatToParisTime(dateString: string): string {
+	const date = new Date(dateString);
+	const options: Intl.DateTimeFormatOptions = {
+		timeZone: 'Europe/Paris',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	};
+	return new Intl.DateTimeFormat('en-GB', options).format(date);
 }
 
 const fetlifeCommand: ChatInputCommand = {
@@ -31,65 +54,118 @@ const fetlifeCommand: ChatInputCommand = {
 						.setRequired(true)
 				)
 		),
-	global: false, // Or true, depending on whether you want it enabled across all guilds
+	global: false,
 
 	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
 		const subcommand = interaction.options.getSubcommand();
+		console.log(`Executing subcommand: ${subcommand}`);
 
 		if (subcommand === "refresh") {
-			const hasPermission = await hasModPermission(client, interaction);
-			if (!hasPermission) return;
+			try {
+				await interaction.deferReply({ ephemeral: true });
+				console.log("Deferred reply for refresh command.");
 
-			const results = await fetchRSVPfromAllParisEvents();
+				const hasPermission = await hasModPermission(client, interaction);
+				console.log(`User has permission: ${hasPermission}`);
+				if (!hasPermission) {
+					await interaction.editReply({ content: "You do not have permission to execute this command." });
+					return;
+				}
 
-			if (results) {
-				const matchedEvents = [];
+				const results = await fetchRSVPfromAllParisEvents();
+				console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
 
-				for (const item of results) {
-					const matchedUsers = [];
+				if (results) {
+					const matchedEvents = [];
+					const userLinks = await UserLink.find({});
+					console.log(`Fetched user links from DB: ${userLinks.length} users`);
 
-					for (const rsvpUser of item.rsvp) {
-						// Find the user in MongoDB
-						const userLink = await UserLink.findOne({ fetlifeUsername: rsvpUser.username });
-						if (userLink) {
-							// Update the userLink with the event ID or any other necessary information
-							await UserLink.updateOne(
-								{ fetlifeUsername: rsvpUser.username },
-								{ $set: { fetlifeID: rsvpUser.userID } } // Assuming you want to store the event ID
-							);
+					for (const item of results) {
+						console.log(`Processing event: ${item.event.name}`);
+						const matchedUsers = [];
 
-							// Add the matched user to the list
-							matchedUsers.push({
-								discordId: userLink.discordId,
-								username: rsvpUser.username
-							});
+						for (const userLink of userLinks) {
+							const rsvpUser = item.rsvp.find(rsvp => rsvp.userID === userLink.fetlifeID || rsvp.username === userLink.fetlifeUsername);
+							if (rsvpUser) {
+								console.log(`Matched user: ${rsvpUser.username}`);
+								await UserLink.updateOne(
+									{ fetlifeUsername: rsvpUser.username },
+									{ $set: { fetlifeID: rsvpUser.userID } }
+								);
+
+								matchedUsers.push({
+									discordId: userLink.discordId,
+									username: rsvpUser.username
+								});
+							}
 						}
-					}
 
-					if (matchedUsers.length > 0) {
-						matchedEvents.push({
-							event: item.event,
-							users: matchedUsers
-						});
+						if (matchedUsers.length > 0) {
+							console.log(`Matched users for event: ${matchedUsers.length}`);
+							matchedEvents.push({
+								event: item.event,
+								users: matchedUsers
+							});
+
+							const embed = new EmbedBuilder()
+								.setTitle(item.event.name)
+								.setDescription(parseDescription(item.event.description))
+								.addFields(
+									{ name: "Start Date", value: formatToParisTime(item.event.start_date_time), inline: true },
+									{ name: "End Date", value: formatToParisTime(item.event.end_date_time), inline: true },
+									{ name: "Location", value: item.event.location, inline: true }
+								)
+								.setColor(client.config.colors.embed);
+
+							const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
+							if (forumChannel && forumChannel instanceof ForumChannel) {
+								console.log(`Creating thread in forum channel: ${forumChannel.id}`);
+								const thread = await forumChannel.threads.create({
+									name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${item.event.name} - ${item.event.id}`,
+									message: {
+										content: `Event: ${item.event.name}`,
+										embeds: [embed],
+									},
+								});
+								console.log(`Started thread: ${thread.id}`);
+
+								const userMentions = matchedUsers.map((user) => `<@${user.discordId}>`);
+								const maxMentionsPerMessage = 50;
+								for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
+									const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
+									await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}`);
+									console.log(`Sent mentions chunk: ${mentionsChunk}`);
+								}
+							} else {
+								console.log(`Could not find forum channel to create thread: ${client.config.parisEventChannelId}`);
+							}
+						}
 					}
 				}
 
-				// You can now use `matchedEvents` as needed, e.g., logging or further processing
-				console.log("Matched Events:", matchedEvents);
+				await interaction.editReply({ content: "RSVP list has been successfully refreshed." });
+				console.log("RSVP list refresh completed.");
+			} catch (error) {
+				console.error("Error during refresh command execution:", error);
+				await interaction.editReply({ content: "An error occurred while refreshing the RSVP list." });
 			}
-
-			await interaction.reply({ content: "RSVP list refreshed.", ephemeral: true });
 		} else if (subcommand === "link") {
-			const fetlifeUsername = interaction.options.getString("username", true);
-			const discordId = interaction.user.id;
+			try {
+				const fetlifeUsername = interaction.options.getString("username", true);
+				const discordId = interaction.user.id;
+				console.log(`Linking Fetlife account: ${fetlifeUsername} for Discord ID: ${discordId}`);
 
-			// Use the UserLink model to save the Fetlife username linked to the Discord ID
-			await UserLink.findOneAndUpdate(
-				{ discordId },
-				{ fetlifeUsername },
-				{ upsert: true, new: true }
-			);
-			await interaction.reply({ content: `Your Fetlife account has been linked as ${fetlifeUsername}.`, ephemeral: true });
+				await UserLink.findOneAndUpdate(
+					{ discordId },
+					{ fetlifeUsername },
+					{ upsert: true, new: true }
+				);
+				await interaction.reply({ content: `Your Fetlife account has been linked as ${fetlifeUsername}.`, ephemeral: true });
+				console.log("Fetlife account linked successfully.");
+			} catch (error) {
+				console.error("Error linking Fetlife account:", error);
+				await interaction.reply({ content: "An error occurred while linking your Fetlife account.", ephemeral: true });
+			}
 		}
 	}
 };

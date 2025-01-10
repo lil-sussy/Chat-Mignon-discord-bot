@@ -105,7 +105,7 @@ async function fetchEventRsvps(eventID: number): Promise<FetlifeUser[]> {
 
 		const html = response.data;
 		const userNames = extractUserData(html);
-		console.log(`User names for event ${eventID}:`, userNames);
+		// console.log(`User names for event ${eventID}:`, userNames);
 		return userNames;
 	} catch (error) {
 		console.error(`Error fetching RSVPs for event ${eventID}:`, (error as Error).message);
@@ -177,7 +177,7 @@ export async function fetchRSVPfromAllParisEvents() {
 		}
 
 		const eventItems: item[] = [];
-
+console.log("looking for rsvps to all events")
 		for (const event of allEvents) {
 			const item: item = {
 				event: event,
@@ -188,6 +188,7 @@ export async function fetchRSVPfromAllParisEvents() {
 			item.rsvp = usernames;
 			eventItems.push(item);
 		}
+    console.log("fetlife refresh done")
     return eventItems;
 	} catch (error) {
 		console.error("Error fetching the login page:", (error as Error).message);
