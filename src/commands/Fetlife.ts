@@ -32,17 +32,9 @@ function parseDescription(event: FetlifeEvent): string {
 	return combinedDescription.substring(0, 1024);
 }
 
-function formatToParisTime(dateString: string): string {
+function formatToDiscordTimestamp(dateString: string): string {
 	const date = new Date(dateString);
-	const options: Intl.DateTimeFormatOptions = {
-		timeZone: 'Europe/Paris',
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit',
-	};
-	return new Intl.DateTimeFormat('en-GB', options).format(date);
+	return `<t:${Math.floor(date.getTime() / 1000)}>`;
 }
 
 async function fetchAndMatchUsers(results: item[], userLinks: any[]): Promise<item[]> {
@@ -125,7 +117,12 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 					const updatedEmbed = new EmbedBuilder()
 						.setTitle(currentItem.event.name)
 						.setDescription(parseDescription(currentItem.event))
-						.addFields({ name: "Start Date", value: formatToParisTime(currentItem.event.start_date_time), inline: true }, { name: "End Date", value: formatToParisTime(currentItem.event.end_date_time), inline: true }, { name: "Location", value: currentItem.event.place.full_name, inline: true }, { name: "Club", value: currentItem.event.location, inline: true })
+						.addFields(
+							{ name: "Start Date", value: formatToDiscordTimestamp(currentItem.event.start_date_time), inline: true },
+							{ name: "End Date", value: formatToDiscordTimestamp(currentItem.event.end_date_time), inline: true },
+							{ name: "Location", value: currentItem.event.place.full_name, inline: true },
+							{ name: "Club", value: currentItem.event.location, inline: true }
+						)
 						.setColor(client.config.colors.embed);
 
 					await threadPost.edit({
@@ -173,8 +170,8 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 			.setTitle(item.event.name)
 			.setDescription(parseDescription(item.event))
 			.addFields(
-				{ name: "Start Date", value: formatToParisTime(item.event.start_date_time), inline: true },
-				{ name: "End Date", value: formatToParisTime(item.event.end_date_time), inline: true },
+				{ name: "Start Date", value: formatToDiscordTimestamp(item.event.start_date_time), inline: true },
+				{ name: "End Date", value: formatToDiscordTimestamp(item.event.end_date_time), inline: true },
 				{ name: "Location", value: item.event.place.full_name, inline: true },
 				{ name: "Club", value: item.event.location, inline: true },
 			)
