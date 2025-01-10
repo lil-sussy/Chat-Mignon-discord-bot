@@ -1,10 +1,14 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, AttachmentBuilder } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import UserLink from "../models/FetlifeUserLink";
-import { fetchRSVPfromAllParisEvents } from "../features/fetchFetlifeEvents";
+import { fetchRSVPfromAllParisEvents, fetchEventImage } from "../features/fetchFetlifeEvents";
 import ExtendedClient from "../classes/Client";
+import { cropStringWithEllipses } from "../utils/StringUtils"
 import { hasModPermission } from "../features/HasModPermissions";
+import sharp from 'sharp';
+
 import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents";
+
 
 enum ThreadAutoArchiveDuration {
 	OneHour = 60,      // 1 hour
@@ -99,9 +103,8 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 		untreatedEventIDs = untreatedEventIDs.filter((id) => id != currentItem.event.id);
 
 		// 1) Check if the event has ended
-		const currentDate = new Date();
 		const eventEndDate = new Date(currentItem.event.end_date_time);
-		if (currentDate > eventEndDate) {
+		if (new Date() > eventEndDate) {
 			await existingThread.setArchived(true);
 			continue;
 		}
@@ -109,16 +112,30 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 		// 2) Update thread post if event details have changed
 		const threadPost = (await existingThread.fetchStarterMessage());
 		if (threadPost && threadPost.author.id === client.user?.id) {
-			const updatedEmbed = new EmbedBuilder()
-				.setTitle(currentItem.event.name)
-				.setDescription(parseDescription(currentItem.event))
-				.addFields({ name: "Start Date", value: formatToParisTime(currentItem.event.start_date_time), inline: true }, { name: "End Date", value: formatToParisTime(currentItem.event.end_date_time), inline: true }, { name: "Location", value: currentItem.event.place.full_name, inline: true }, { name: "Club", value: currentItem.event.location, inline: true })
-				.setColor(client.config.colors.embed)
-				.setImage(currentItem.event.cover_image);
+			try {
+				const imageBuffer = await fetchEventImage(currentItem.event.cover_image);
+				if (imageBuffer) {
+					// Convert the image buffer using sharp
+					const processedImageBuffer = await sharp(imageBuffer)
+						.toFormat("png") // Convert to PNG or any other format if needed
+						.toBuffer();
 
-			await threadPost.edit({
-				embeds: [updatedEmbed],
-			});
+					const attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
+
+					const updatedEmbed = new EmbedBuilder()
+						.setTitle(currentItem.event.name)
+						.setDescription(parseDescription(currentItem.event))
+						.addFields({ name: "Start Date", value: formatToParisTime(currentItem.event.start_date_time), inline: true }, { name: "End Date", value: formatToParisTime(currentItem.event.end_date_time), inline: true }, { name: "Location", value: currentItem.event.place.full_name, inline: true }, { name: "Club", value: currentItem.event.location, inline: true })
+						.setColor(client.config.colors.embed);
+
+					await threadPost.edit({
+						files: [attachment],
+						embeds: [updatedEmbed],
+					});
+				}
+			} catch (error) {
+				console.error("Error updating thread post:", error);
+			}
 		}
 
 		// 3) Check if new users have registered
@@ -141,7 +158,7 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 
 		if (unmentionedUsers.length > 0) {
 			const newUserMentions = unmentionedUsers.map((u) => `<@${u.discordId}>`).join(", ");
-			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}\n-#Stop pinging me ? use /fetlife revoke`);
+			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}\n-# Stop pinging me ? use /fetlife revoke`);
 		}
 	}
 	return untreatedEventIDs;
@@ -168,7 +185,7 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 		const currentDate = new Date();
 		const duration = Math.floor((eventEndDate.getTime() - currentDate.getTime()) / (1000 * 60));
 
-		let autoArchiveDuration: number;
+		let autoArchiveDuration: number|null;
 		if (duration <= ThreadAutoArchiveDuration.OneHour) {
 			autoArchiveDuration = ThreadAutoArchiveDuration.OneHour;
 		} else if (duration <= ThreadAutoArchiveDuration.OneDay) {
@@ -176,17 +193,17 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 		} else if (duration <= ThreadAutoArchiveDuration.ThreeDays) {
 			autoArchiveDuration = ThreadAutoArchiveDuration.ThreeDays;
 		} else {
-			autoArchiveDuration = ThreadAutoArchiveDuration.OneWeek;
+			autoArchiveDuration = null;
 		}
 
 		const thread = await forumChannel.threads.create({
-			autoArchiveDuration: autoArchiveDuration,
-			name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${item.event.name} - ${item.event.id}`,
+			autoArchiveDuration: autoArchiveDuration!,
+			name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${cropStringWithEllipses(item.event.name, 60)} - ${item.event.id}`,
 			message: {
 				embeds: [embed],
 			},
 			// @ts-ignore
-			icon: item.event.cover_image
+			icon: item.event.cover_image,
 		});
 		console.log(`Started thread: ${thread.id}`);
 
@@ -205,7 +222,7 @@ async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: n
 		const maxMentionsPerMessage = 50;
 		for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
 			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
-			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}\n-#Stop pinging me ? use /fetlife revoke`);
+			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`);
 		}
 	}
 }
@@ -266,6 +283,7 @@ const fetlifeCommand: ChatInputCommand = {
 						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
 						console.log(untreatedEventIDs);
 						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
+            console.log("done refreshing")
 					}
 				}
 
@@ -288,7 +306,7 @@ const fetlifeCommand: ChatInputCommand = {
 
 				// Trigger the refresh logic after linking
 				await interaction.followUp({ content: "Refreshing RSVP list...", ephemeral: true });
-				await this.execute(client, interaction); // Call the refresh logic
+				// await this.execute(client, interaction); // Call the refresh logic
 			} catch (error) {
 				console.error("Error linking Fetlife account:", error);
 				await interaction.reply({ content: "An error occurred while linking your Fetlife account.", ephemeral: true });

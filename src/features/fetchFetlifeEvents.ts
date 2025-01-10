@@ -196,3 +196,31 @@ console.log("looking for rsvps to all events")
     return null;
 	}
 }
+
+export async function fetchEventImage(url: string): Promise<Buffer | null> {
+	try {
+		const response = await axiosInstance.get(url, {
+			responseType: 'arraybuffer',
+			headers: {
+				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0",
+				Accept: "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+				"Accept-Language": "en-US,en;q=0.5",
+				"Accept-Encoding": "gzip, deflate, br, zstd",
+				Referer: "https://fetlife.com/",
+				"Sec-Fetch-Dest": "image",
+				"Sec-Fetch-Mode": "no-cors",
+				"Sec-Fetch-Site": "same-site",
+				Connection: "keep-alive",
+				"Alt-Used": "picav2-u1000.cdn.fetlife.com",
+				Cookie:
+					"_cfuvid=bGHXyKTYlobwXS_7t6yMj6Y8qgNdotK9Nc6mLLi2PSA-1736477463445-0.0.1.1-604800000; _fl_sessionid=653d1fd8dcdb09797e3de869763d5a7b; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3lNRGd3TkRjd05WMHNJaVF5WVNReE1pUTFUM052T0VsSlZVUnVhVkI0ZWs4dk5tNXhMbTVsSWl3aU1UY3pOalEzTnpRNE15NDNOakEzTWpNMElsMD0iLCJleHAiOiIyMDI1LTAxLTI0VDAyOjUxOjIzLjc2MFoiLCJwdXIiOiJjb29raWUucmVtZW1iZXJfdXNlcl90b2tlbiJ9fQ%3D%3D--07fb71169dd175450bf671260464ef82e3a698db; __cf_bm=8QFuktAPlbshGJmSJ5.qMS1pfAasu_TaDqREE_S6Ftg-1736502099-1.0.1.1-T3z.ZpOXFXA9Ik6BkPFg7Nv9AOO.rlpeM8bBhc546a2LWZ_sH81F.FFnFtBOT0Kvln_3bKQbeNFICmzb0yJHqLVXtoa4N0wcJxFOIedVuE8; cf_clearance=pgJoYGMDc7ecxNW9ju72seTg_SXjcbVw3gge4BYJt4s-1736502099-1.2.1.1-BwFwBXdQjcEiLEX9zgTrxZKOrqSVyBWAiYxk4DhnNU7ZU.MlJS1AFagrjoUQRv0.CxbtEuydXyppi74hKGBTrVNU626BOghLM4i6G1h1yagZfNwamlRqFpX7NjAXDpk1OK98zqtdzW2ACIFXs9axd7b.u898D9e.BQ3yJgbWBg9hGXQvmsB5iUUlL.AHba4co6oUS5arR7ghE1q7mrTkihd2yKKrsIYcA2l7L3hs37vLBrNQxnK",
+			},
+		});
+
+		console.log("Image fetched successfully:", response.status);
+		return Buffer.from(response.data, "base64");
+	} catch (error) {
+		console.error("Error fetching image:", (error as Error).message);
+		return null;
+	}
+}
