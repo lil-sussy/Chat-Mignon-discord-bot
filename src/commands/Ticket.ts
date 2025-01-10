@@ -5,7 +5,7 @@ import {
   ChannelType,
 } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
-import { createTicketChannel } from "../utils/ChannelCreator";
+import { createTicketChannel } from "../features/ChannelCreator";
 
 const TicketCommand: ChatInputCommand = {
   options: new SlashCommandBuilder()

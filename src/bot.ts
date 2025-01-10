@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import StarboardSetting from "./models/StarboardSetting";
 import Confession from "./models/Confession"; // for storing confessions
 import fetlifeCommand from "./commands/Fetlife"; // Ensure this import is correct
+import GoonCommand from "./commands/Goon";
 
 // Load .env file contents
 config();

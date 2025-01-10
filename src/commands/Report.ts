@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces/Command";
-import { createTicketChannel } from "../utils/ChannelCreator"; // NEW IMPORT
+import { createTicketChannel } from "../features/ChannelCreator"; // NEW IMPORT
 
 export default {
   options: new SlashCommandBuilder()

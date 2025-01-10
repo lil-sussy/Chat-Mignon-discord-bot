@@ -53,6 +53,8 @@ interface Config {
 	};
 	moderatorRoleName: string;
 	updateChannelId: string;
+	goonChannelID: string;
+	chastityChannelID: string;
 	parisEventChannelId: string;
 	catEmojis: string[];
 }

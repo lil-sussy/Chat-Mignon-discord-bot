@@ -3,7 +3,7 @@ import crypto from "crypto";
 import ConfessionDB from "../models/Confession";
 import ExtendedClient from "../classes/Client";
 import ConfessionSetting from "../models/ConfessionSetting";
-import { createTicketChannel } from "../utils/ChannelCreator";
+import { createTicketChannel } from "../features/ChannelCreator";
 
 function flagColor(count: number) {
 	const transFlag = [0x5bcefa, 0xf5a9b8, 0xffffff, 0xf5a9b8, 0x5bcefa];
