@@ -38,11 +38,12 @@ export function buildMessage(target: GuildMember | undefined, message: string, c
 function extractPronounsFromRoles(target: GuildMember): string[] {
   const roleNames = target.roles.cache.map(role => role.name.toLowerCase());
   const pronouns = [];
+  roleNames.filter(role => role.includes("it"));
 
-  if (roleNames.includes("it")) pronouns.push("it", "it", "its");
-  if (roleNames.includes("they")) pronouns.push("they", "them", "their");
-  if (roleNames.includes("she")) pronouns.push("she", "her", "her");
-  if (roleNames.includes("he")) pronouns.push("he", "him", "his");
+  if (roleNames.filter(role => role.includes("it")).length > 0) pronouns.push("it", "it", "its");
+  else if (roleNames.filter((role) => role.includes("they")).length > 0) pronouns.push("they", "them", "their");
+	else if (roleNames.filter((role) => role.includes("she")).length > 0) pronouns.push("she", "her", "her");
+	else if (roleNames.filter((role) => role.includes("he")).length > 0) pronouns.push("he", "him", "his");
 
   // Prioritize pronouns: it > they > she > he
   return pronouns.length > 0 ? pronouns : ["they", "them", "their"];
