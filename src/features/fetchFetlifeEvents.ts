@@ -1,16 +1,12 @@
-
-// Simplify normalHeaders or remove it altogether if you like.
-// No explicit Cookie header so the jar is the single source of truth.
-
-const axios = require("axios");
-const { URLSearchParams } = require("url");
-const fs = require("fs"); // Import the fs module
-const { wrapper: axiosCookieJarSupport } = require("axios-cookiejar-support");
-const { CookieJar } = require("tough-cookie");
+import axios, { AxiosInstance } from "axios";
+import { URLSearchParams } from "url";
+import fs from "fs";
+import { wrapper as axiosCookieJarSupport } from "axios-cookiejar-support";
+import { CookieJar } from "tough-cookie";
 
 // Create a dedicated axios instance with cookie jar support
 const cookieJar = new CookieJar();
-const axiosInstance = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
 	baseURL: "https://fetlife.com",
 	withCredentials: true,
 	headers: {
@@ -29,14 +25,40 @@ const axiosInstance = axios.create({
 	},
 });
 axiosCookieJarSupport(axiosInstance);
-// Function to fetch the login page
 
-async function fetchEventsNear() {
+interface Event {
+	id: number;
+	// Add other properties if needed
+}
+
+interface UserData {
+	userID: string | null;
+	username: string | null;
+}
+
+const extractUserData = (html: string): UserData[] => {
+	const divs: string[] = [];
+	const regex = /<div class="sm:w-1\/2 w-full px-1">([\s\S]*?)<\/div>/g;
+	let match;
+	while ((match = regex.exec(html)) !== null) {
+		const userName = match[1].trim();
+		divs.push(userName);
+	}
+	return divs.map((div) => {
+		// Extract userID from the href attribute in the onclick
+		const userIDMatch = div.match(/\/users\/(\d+)/);
+		const userID = userIDMatch ? userIDMatch[1] : null;
+
+		// Extract username from the title attribute
+		const usernameMatch = div.match(/title=\"(.*?)\"/);
+		const username = usernameMatch ? usernameMatch[1] : null;
+
+		return { userID, username };
+	});
+};
+
+async function fetchEventsNear(): Promise<Event[]> {
 	try {
-		const now = new Date();
-		const fromDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-		const fromTime = now.toISOString(); // Full ISO string
-
 		const response = await axiosInstance.get('/events/near', {
 			params: {
 				page: 1,
@@ -47,8 +69,8 @@ async function fetchEventsNear() {
 				'search[range]': 50000,
 				'search[place_name]': '19th arrondissement, Paris, Île-de-France, France',
 				'search[bbox]': '2.364728,48.872049,2.41082,48.902148',
-				from_date: fromDate,
-				from_time: fromTime
+				from_date: new Date().toISOString().split('T')[0],
+				from_time: new Date().toISOString()
 			},
 			headers: {
 				'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0',
@@ -67,11 +89,12 @@ async function fetchEventsNear() {
 
 		return response.data.entries;
 	} catch (error) {
-		console.error('Error fetching events near:', error.message);
+		console.error('Error fetching events near:', (error as Error).message);
+		return [];
 	}
 }
 
-async function fetchEventRsvps(eventID) {
+async function fetchEventRsvps(eventID: number): Promise<UserData[]> {
 	try {
 		const response = await axiosInstance.get(`/events/${eventID}/rsvps`, {
 			headers: {
@@ -95,51 +118,25 @@ async function fetchEventRsvps(eventID) {
 		console.log(`User names for event ${eventID}:`, userNames);
 		return userNames;
 	} catch (error) {
-		console.error(`Error fetching RSVPs for event ${eventID}:`, error.message);
+		console.error(`Error fetching RSVPs for event ${eventID}:`, (error as Error).message);
+		return [];
 	}
 }
 
-const extractUserData = (html) => {
-  const divs = [];
-  const regex = /<div class="sm:w-1\/2 w-full px-1">([\s\S]*?)<\/div>/g;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const userName = match[1].trim();
-    divs.push(userName);
-  }
-  return divs.map((div) => {
-		// Extract userID from the href attribute in the onclick
-		const userIDMatch = div.match(/\/users\/(\d+)/);
-		const userID = userIDMatch ? userIDMatch[1] : null;
-
-		// Extract username from the title attribute
-		const usernameMatch = div.match(/title=\"(.*?)\"/);
-		const username = usernameMatch ? usernameMatch[1] : null;
-
-		return { userID, username };
-	});
-
-};
-
-
-async function main() {
+export async function fetchRSVPfromAllParisEvents() {
 	try {
-		// Now use the pre-configured axiosInstance
 		const data = await fetchEventsNear();
 
-		const events = [];
+		const events: UserData[][] = [];
 
 		for (const event of data) {
 			const eventID = event.id; // Assuming each event object has an 'id' property
-      const usernames = await fetchEventRsvps(eventID);
+			const usernames = await fetchEventRsvps(eventID);
 			events.push(usernames);
 		}
 
 		console.log(events);
 	} catch (error) {
-		console.error("Error fetching the login page:", error.message);
+		console.error("Error fetching the login page:", (error as Error).message);
 	}
 }
-
-// Execute the function
-main();
