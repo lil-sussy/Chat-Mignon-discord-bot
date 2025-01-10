@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { FetLifeUser } from "../features/fetlife"; // Adjust the path to your implementation
+import { FetLifeUser } from "../features/fetlife_api"; // Adjust the path to your implementation
 
 describe("FetLifeUser Tests", function () {
 	let flUser: FetLifeUser; // Explicitly type the shared instance
