@@ -56,27 +56,27 @@ export const GoonCommand: Command = {
           } else {
             // More than a week
             // 1. DM user: inactivity check
-            await interaction.user.send(`Inactivity check — your last /goon command was a week ago on: ${lastDate?.toLocaleString()}.`);
+            // await interaction.user.send(`Inactivity check — your last /goon command was a week ago on: ${lastDate?.toLocaleString()}.`);
     
-            // 2) Provide buttons
-            const actionRow = new ActionRowBuilder<ButtonBuilder>()
-              .addComponents(
-                new ButtonBuilder()
-                  .setCustomId("delete_goon_data")
-                  .setLabel("Delete & Reset my data")
-                  .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                  .setCustomId("announce_abstinence")
-                  .setLabel("Announce my abstinence achievement")
-                  .setStyle(ButtonStyle.Primary)
-              );
-            await interaction.user.send({ components: [actionRow] });
+            // // 2) Provide buttons
+            // const actionRow = new ActionRowBuilder<ButtonBuilder>()
+            //   .addComponents(
+            //     new ButtonBuilder()
+            //       .setCustomId("delete_goon_data")
+            //       .setLabel("Delete & Reset my data")
+            //       .setStyle(ButtonStyle.Danger),
+            //     new ButtonBuilder()
+            //       .setCustomId("announce_abstinence")
+            //       .setLabel("Announce my abstinence achievement")
+            //       .setStyle(ButtonStyle.Primary)
+            //   );
+            // await interaction.user.send({ components: [actionRow] });
     
             // 3) If user still uses /goon after a week:
             messageToSend = `<@${discordId}> just failed \\3dPersonPossessive\\ ~${timeDiffInWeeks} week(s) and ${remainingDays} day(s) rampage \\cat\\! Must have been a relief!! THAT MUST NOT REMAIN UNPUNISHED \\cat\\ \\cat\\`;
           }
         } else {
-          messageToSend = `<@${discordId}> has just registered a new gooning session here \\cat\\`;
+          messageToSend = `<@${discordId}> wanted everyoen to know that \\1stPerson\\ has just gooned ! A new new gooning session has been registered \\cat\\`;
         }
 
         // Send a message to the configured goon channel
