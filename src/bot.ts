@@ -70,11 +70,15 @@ async function main() {
 
 				await fetlifeCommand.execute(client, mockInteraction);
 				console.log("Executed fetlife refresh command.");
+
+				// Send a DM to the specified user
+				const user = await client.users.fetch("318114986222157824");
+				await user.send("updating fetlife");
 			}
 		} catch (error) {
 			console.error("Error executing scheduled fetlife refresh:", error);
 		}
-	}, 3600000); // 3600000 ms = 1 hour
+	}, 600000); // 600000 ms = 10 minutes
 
 	// Function to switch activity
 	const switchActivity = () => {

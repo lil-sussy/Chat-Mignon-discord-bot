@@ -42,7 +42,7 @@ export const GoonCommand: Command = {
         let timeDiffInMs = 0;
         if (lastDate) {
           timeDiffInMs = now.getTime() - lastDate.getTime();
-          const timeDiffInHours = timeDiffInMs / (1000 * 60 * 60);
+          const timeDiffInHours = Math.floor(timeDiffInMs / (1000 * 60 * 60));
           const timeDiffInDays = Math.floor(timeDiffInHours / 24);
           const timeDiffInWeeks = Math.floor(timeDiffInDays / 7);
           const remainingDays = timeDiffInDays % 7;
