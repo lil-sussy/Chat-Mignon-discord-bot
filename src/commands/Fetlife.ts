@@ -4,23 +4,7 @@ import UserLink from "../models/FetlifeUserLink"; // Import the new model
 import { fetchRSVPfromAllParisEvents } from "../features/fetchFetlifeEvents";
 import ExtendedClient from "../classes/Client";
 import { hasModPermission } from "../features/HasModPermissions";
-import { FetlifeEvent, FetlifeUser } from "../path/to/types"; // Adjust the path as necessary
-
-// Define the missing types
-interface FetlifeEvent {
-	// Define the properties of a FetlifeEvent
-	id: string;
-	name: string;
-	date: Date;
-	// Add other properties as needed
-}
-
-interface FetlifeUser {
-	// Define the properties of a FetlifeUser
-	id: string;
-	username: string;
-	// Add other properties as needed
-}
+import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents"; // Adjust the path as necessary
 
 interface item {
 	event: FetlifeEvent;
