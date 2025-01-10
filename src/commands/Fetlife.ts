@@ -141,12 +141,10 @@ export async function updateExistingThreads(forumChannel: ForumChannel, matchedE
 		}
 
 		const threadMatchedUsers = currentItem.rsvp.filter((u) => u.discordId) || [];
-    console.log(threadMatchedUsers);
 		const unmentionedUsers = threadMatchedUsers.filter((u) => {
 			const mention = `<@${u.discordId}>`;
 			return !existingMentions.has(mention);
 		});
-    console.log(unmentionedUsers);
 
 		if (unmentionedUsers.length > 0) {
 			const newUserMentions = unmentionedUsers.map((u) => `<@${u.discordId}>`).join(", ");
