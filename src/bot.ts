@@ -1,4 +1,4 @@
-import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role } from "discord.js";
+import { ActivityType, DiscordjsError, GatewayIntentBits as Intents, Partials, MessageReaction, PartialMessageReaction, User, PartialUser, PresenceStatusData, Guild, Role, ChatInputCommandInteraction, CommandInteraction } from "discord.js";
 import ExtendedClient from "./classes/Client";
 import { config } from "dotenv";
 import StarboardEvent from "./events/StarboardEvent";
@@ -6,6 +6,7 @@ import StarboardCommand from "./commands/Starboard";
 import mongoose from "mongoose";
 import StarboardSetting from "./models/StarboardSetting";
 import Confession from "./models/Confession"; // for storing confessions
+import fetlifeCommand from "./commands/Fetlife"; // Ensure this import is correct
 
 // Load .env file contents
 config();
@@ -47,23 +48,32 @@ async function main() {
 	// Register the starboard event
 	client.events.set(StarboardEvent.name, StarboardEvent);
 
-	// Add event listener for messageReactionAdd
-	// client.on("messageReactionAdd", async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
-	// 	// Ensure the user is not a bot
-	// 	if (user.bot) return;
+	// Schedule the fetlife refresh command to run every hour
+	setInterval(async () => {
+		try {
+			const guild = await client.guilds.fetch(client.config.guild);
+			const channel = await guild.channels.fetch(client.config.parisEventChannelId);
 
-	// 	// Fetch the reaction if it's partial
-	// 	if (reaction.partial) {
-	// 		try {
-	// 			await reaction.fetch();
-	// 		} catch (error) {
-	// 			console.error('Error fetching reaction:', error);
-	// 			return;
-	// 		}
-	// 	}
+			if (channel && channel.isTextBased()) {
+				const mockInteraction = {
+					client: client,
+					guild: guild,
+					channel: channel,
+					user: client.user,
+					options: {
+						getSubcommand: () => "refresh",
+					},
+					deferReply: async () => {},
+					editReply: async (message: any) => console.log(message),
+				} as unknown as ChatInputCommandInteraction;
 
-	// 	await StarboardEvent.execute(client, reaction, user);
-	// });
+				await fetlifeCommand.execute(client, mockInteraction);
+				console.log("Executed fetlife refresh command.");
+			}
+		} catch (error) {
+			console.error("Error executing scheduled fetlife refresh:", error);
+		}
+	}, 3600000); // 3600000 ms = 1 hour
 
 	// Function to switch activity
 	const switchActivity = () => {

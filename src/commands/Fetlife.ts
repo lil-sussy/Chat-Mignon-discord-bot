@@ -93,11 +93,11 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 
 		const currentItem = matchedEvents.find((e) => e.event.id === threadEventId);
 		if (!currentItem) {
-      existingThread.setArchived(true);
+			existingThread.setArchived(true);
 			continue;
 		}
-    untreatedEventIDs = untreatedEventIDs.filter((id) => id != currentItem.event.id);
-    
+		untreatedEventIDs = untreatedEventIDs.filter((id) => id != currentItem.event.id);
+
 		// 1) Check if the event has ended
 		const currentDate = new Date();
 		const eventEndDate = new Date(currentItem.event.end_date_time);
@@ -106,9 +106,9 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 			continue;
 		}
 
-		// 2) Update thread message if event details have changed
-		const firstMessage = (await existingThread.messages.fetch({ limit: 1 })).first();
-		if (firstMessage && firstMessage.author.id === client.user?.id) {
+		// 2) Update thread post if event details have changed
+		const threadPost = (await existingThread.fetchStarterMessage());
+		if (threadPost && threadPost.author.id === client.user?.id) {
 			const updatedEmbed = new EmbedBuilder()
 				.setTitle(currentItem.event.name)
 				.setDescription(parseDescription(currentItem.event))
@@ -116,7 +116,7 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 				.setColor(client.config.colors.embed)
 				.setImage(currentItem.event.cover_image);
 
-			await firstMessage.edit({
+			await threadPost.edit({
 				embeds: [updatedEmbed],
 			});
 		}
