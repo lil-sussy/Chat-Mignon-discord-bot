@@ -41,7 +41,43 @@ const fetlifeCommand: ChatInputCommand = {
 			if (!hasPermission) return;
 
 			const results = await fetchRSVPfromAllParisEvents();
-      
+
+			if (results) {
+				const matchedEvents = [];
+
+				for (const item of results) {
+					const matchedUsers = [];
+
+					for (const rsvpUser of item.rsvp) {
+						// Find the user in MongoDB
+						const userLink = await UserLink.findOne({ fetlifeUsername: rsvpUser.username });
+						if (userLink) {
+							// Update the userLink with the event ID or any other necessary information
+							await UserLink.updateOne(
+								{ fetlifeUsername: rsvpUser.username },
+								{ $set: { fetlifeID: rsvpUser.userID } } // Assuming you want to store the event ID
+							);
+
+							// Add the matched user to the list
+							matchedUsers.push({
+								discordId: userLink.discordId,
+								username: rsvpUser.username
+							});
+						}
+					}
+
+					if (matchedUsers.length > 0) {
+						matchedEvents.push({
+							event: item.event,
+							users: matchedUsers
+						});
+					}
+				}
+
+				// You can now use `matchedEvents` as needed, e.g., logging or further processing
+				console.log("Matched Events:", matchedEvents);
+			}
+
 			await interaction.reply({ content: "RSVP list refreshed.", ephemeral: true });
 		} else if (subcommand === "link") {
 			const fetlifeUsername = interaction.options.getString("username", true);
