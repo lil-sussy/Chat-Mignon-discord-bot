@@ -80,7 +80,7 @@ async function fetchAndMatchUsers(results: item[], userLinks: any[]): Promise<it
 }
 
 async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: item[], client: ExtendedClient) {
-	const untreatedEventIDs: number[] = matchedEvents.map((e) => e.event.id);
+	let untreatedEventIDs: number[] = matchedEvents.map((e) => e.event.id);
 	console.log("Checking existing threads for updates...");
 
 	const fetchedThreads = await forumChannel.threads.fetchActive();
@@ -96,7 +96,8 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
       existingThread.setArchived(true);
 			continue;
 		}
-
+    untreatedEventIDs = untreatedEventIDs.filter((id) => id != currentItem.event.id);
+    
 		// 1) Check if the event has ended
 		const currentDate = new Date();
 		const eventEndDate = new Date(currentItem.event.end_date_time);
@@ -142,7 +143,6 @@ async function updateExistingThreads(forumChannel: ForumChannel, matchedEvents: 
 			const newUserMentions = unmentionedUsers.map((u) => `<@${u.discordId}>`).join(", ");
 			await existingThread.send(`Those users have mentioned that they will also go to the event: ${newUserMentions}`);
 		}
-    untreatedEventIDs.filter(id => id !== currentItem.event.id)
 	}
 	return untreatedEventIDs;
 }
@@ -246,7 +246,9 @@ const fetlifeCommand: ChatInputCommand = {
 
 					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
 					if (forumChannel && forumChannel instanceof ForumChannel) {
+            console.log(matchedEvents.map((e) => e.event.id));
 						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
+            console.log(untreatedEventIDs);
 						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
 					}
 				}
