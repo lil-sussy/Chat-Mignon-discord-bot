@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { Events, MessageReaction, User, TextChannel, DMChannel, PartialMessageReaction, PartialUser } from "discord.js";
 import ExtendedClient from "../classes/Client";
-
+import ReactionConfig from "../models/ReactionConfig";
 
 import { Event } from '../interfaces';
 
@@ -28,14 +28,20 @@ const messageCreateEvent: Event = {
 			}
 		}
 
-		// New pattern for "quoi" with reaction "feur"
-		// const quoiPattern = /quoi(?=\s|$|[^\w])/i;
-		// const pourquoiPattern = /pour.*quoi/i;
-		// if (pourquoiPattern.test(message.content)) {
-		// 	await message.reply("pour feur mec");
-		// } else if (quoiPattern.test(message.content)) {
-		// 	await message.reply("feur");
-		// }
+		// Check MongoDB if "feur" reactions are enabled
+		const feurConfig = await ReactionConfig.findOne({ reactionName: "feur" });
+		const isFeurEnabled = feurConfig?.enabled;
+
+		if (isFeurEnabled) {
+			const quoiPattern = /quoi(?=\s|$|[^\w])/i;
+			const pourquoiPattern = /pour.*quoi/i;
+
+			if (pourquoiPattern.test(message.content)) {
+				await message.reply("pour feur mec");
+			} else if (quoiPattern.test(message.content)) {
+				await message.reply("feur");
+			}
+		}
 	},
 };
 
