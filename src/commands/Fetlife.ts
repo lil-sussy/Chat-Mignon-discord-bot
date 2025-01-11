@@ -159,21 +159,8 @@ export async function createNewThreads(forumChannel: ForumChannel, untreatedEven
 	for (const eventID of untreatedEventIDs) {
 		const item = matchedEvents.find((e) => e.event.id === eventID);
 		if (!item) return;
-		const imageBuffer = await fetchEventImage(item.event.cover_image);
-    let attachment;
-		if (imageBuffer) {
-			// Convert the image buffer using sharp
-			const processedImageBuffer = await sharp(imageBuffer)
-				.toFormat("png") // Convert to PNG or any other format if needed
-				.toBuffer();
-			attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
-		}
 
-		const embed = new EmbedBuilder()
-			.setTitle(item.event.name)
-			.setDescription(parseDescription(item.event))
-			.addFields({ name: "Start Date", value: formatToDiscordTimestamp(item.event.start_date_time), inline: true }, { name: "End Date", value: formatToDiscordTimestamp(item.event.end_date_time), inline: true }, { name: "Location", value: item.event.place.full_name, inline: true }, { name: "Club", value: item.event.location, inline: true })
-			.setColor(client.config.colors.embed)
+		const { embed, attachment } = await createEventEmbedWithImage(item.event, client);
 
 		const eventEndDate = new Date(item.event.end_date_time);
 		const currentDate = new Date();
@@ -191,11 +178,10 @@ export async function createNewThreads(forumChannel: ForumChannel, untreatedEven
 		}
 
 		const thread = await forumChannel.threads.create({
-			// autoArchiveDuration: autoArchiveDuration!,
 			name: `${item.event.start_date_time.split("T")[0].split("-").reverse().join("/")} - ${cropStringWithEllipses(item.event.name, 60)} - ${item.event.id}`,
 			message: {
 				embeds: [embed],
-        files: [attachment!],
+				files: attachment ? [attachment] : [],
 			},
 			// @ts-ignore
 			icon: item.event.cover_image,
@@ -216,6 +202,60 @@ export async function createNewThreads(forumChannel: ForumChannel, untreatedEven
 			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
 			await thread.send(`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`);
 		}
+	}
+}
+
+export async function createSocialEventPosts(channel: any, munchEvents: item[], client: ExtendedClient) {
+	console.log("Posting social events in munch channel...");
+	for (const eventItem of munchEvents) {
+		try {
+			const { embed, attachment } = await createEventEmbedWithImage(eventItem.event, client);
+
+			// Send embed + image
+			await channel.send({
+				embeds: [embed],
+				files: attachment ? [attachment] : [],
+			});
+
+			// Send user mentions in chunks
+			const userMentions = eventItem.rsvp.map((user) => `<@${user.discordId}>`);
+			const maxMentionsPerMessage = 50;
+			for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
+				const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
+				await channel.send(
+					`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`
+				);
+			}
+		} catch (error) {
+			console.error("Error creating social event post:", error);
+		}
+	}
+}
+
+async function createEventEmbedWithImage(event: FetlifeEvent, client: ExtendedClient): Promise<{ embed: EmbedBuilder, attachment?: AttachmentBuilder }> {
+	try {
+		let attachment;
+		const imageBuffer = await fetchEventImage(event.cover_image);
+		if (imageBuffer) {
+			const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
+			attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
+		}
+
+		const embed = new EmbedBuilder()
+			.setTitle(event.name)
+			.setDescription(parseDescription(event))
+			.addFields(
+				{ name: "Start Date", value: formatToDiscordTimestamp(event.start_date_time), inline: true },
+				{ name: "End Date", value: formatToDiscordTimestamp(event.end_date_time), inline: true },
+				{ name: "Location", value: event.place.full_name, inline: true },
+				{ name: "Club", value: event.location, inline: true }
+			)
+			.setColor(client.config.colors.embed);
+
+		return { embed, attachment };
+	} catch (error) {
+		console.error("Error creating event embed with image:", error);
+		return { embed: new EmbedBuilder().setTitle(event.name).setDescription("Error loading event details.") };
 	}
 }
 
@@ -256,13 +296,28 @@ const fetlifeCommand: ChatInputCommand = {
 
 					const matchedEvents = await fetchAndMatchUsers(results, userLinks);
 
-					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
-					if (forumChannel && forumChannel instanceof ForumChannel) {
-						console.log(matchedEvents.map((e) => e.event.id));
-						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
-						console.log(untreatedEventIDs);
-						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
-						console.log("done refreshing");
+					// Separate events by category
+					const munchEvents = matchedEvents.filter((e) => e.event.category?.toLowerCase() === "social");
+					const normalEvents = matchedEvents.filter((e) => e.event.category?.toLowerCase() !== "social");
+
+					// Handle "social" events by posting in munch channel
+					if (munchEvents.length) {
+						const munchChannel = await client.channels.fetch(client.config.munchChannelID);
+						if (munchChannel?.isTextBased()) {
+							await createSocialEventPosts(munchChannel, munchEvents, client);
+						}
+					}
+
+					// Handle other events via forum threads
+					if (normalEvents.length) {
+						const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
+						if (forumChannel && forumChannel instanceof ForumChannel) {
+							console.log(normalEvents.map((e) => e.event.id));
+							const untreatedEventIDs = await updateExistingThreads(forumChannel, normalEvents, client);
+							console.log(untreatedEventIDs);
+							await createNewThreads(forumChannel, untreatedEventIDs, normalEvents, client);
+							console.log("done refreshing");
+						}
 					}
 				}
 

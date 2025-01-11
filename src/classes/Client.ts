@@ -56,6 +56,7 @@ interface Config {
 	goonChannelID: string;
 	chastityChannelID: string;
 	parisEventChannelId: string;
+	munchChannelID: string;
 	catEmojis: string[];
 }
 /**
