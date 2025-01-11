@@ -29,7 +29,7 @@ function parseDescription(event: FetlifeEvent): string {
 			.filter((line) => line.includes("€"))
 			.join("\n");
 
-	const combinedDescription = `Link: https://fetlife.com/events/${event.id}\n\nPrice:\n${euroLines}\n\n${event.description}`;
+	const combinedDescription = `Link: https://fetlife.com/events/${event.id}\n\nPrice:\n${euroLines}\n\n${event.category === "social" ? "🌟🌟🌟🌟🌟" : event.description}`;
 	return combinedDescription.substring(0, 1024);
 }
 
@@ -206,40 +206,43 @@ export async function createNewThreads(forumChannel: ForumChannel, untreatedEven
 }
 
 export async function createSocialEventPosts(channel: any, munchEvents: item[], client: ExtendedClient) {
-	console.log("Posting social events in munch channel...");
-	for (const eventItem of munchEvents) {
-		try {
-			const { embed, attachment } = await createEventEmbedWithImage(eventItem.event, client);
+	// console.log("Posting social events in munch channel...");
+	// for (const eventItem of munchEvents) {
+	// 	try {
+	// 		const { embed, attachment } = await createEventEmbedWithImage(eventItem.event, client);
 
-			// Send embed + image
-			await channel.send({
-				embeds: [embed],
-				files: attachment ? [attachment] : [],
-			});
+	// 		// Send embed + image
+	// 		const munchMessage = await channel.send({
+	// 			embeds: [embed],
+	// 			files: attachment ? [attachment] : [],
+	// 		});
 
-			// Send user mentions in chunks
-			const userMentions = eventItem.rsvp.map((user) => `<@${user.discordId}>`);
-			const maxMentionsPerMessage = 50;
-			for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
-				const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
-				await channel.send(
-					`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`
-				);
-			}
-		} catch (error) {
-			console.error("Error creating social event post:", error);
-		}
-	}
+	// 		// Send user mentions in chunks
+	// 		const userMentions = eventItem.rsvp.map((user) => `<@${user.discordId}>`);
+	// 		const maxMentionsPerMessage = 50;
+	// 		for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
+	// 			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
+	// 			await channel.reply(
+  //         munchMessage,
+	// 				`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`
+	// 			);
+	// 		}
+	// 	} catch (error) {
+	// 		console.error("Error creating social event post:", error);
+	// 	}
+	// }
 }
 
 async function createEventEmbedWithImage(event: FetlifeEvent, client: ExtendedClient): Promise<{ embed: EmbedBuilder, attachment?: AttachmentBuilder }> {
 	try {
-		let attachment;
-		const imageBuffer = await fetchEventImage(event.cover_image);
-		if (imageBuffer) {
-			const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
-			attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
-		}
+    let attachment;
+    if (event.category !== "social") {
+      const imageBuffer = await fetchEventImage(event.cover_image);
+      if (imageBuffer) {
+        const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
+        attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
+      }
+    }
 
 		const embed = new EmbedBuilder()
 			.setTitle(event.name)

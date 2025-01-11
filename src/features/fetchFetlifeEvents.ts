@@ -3,6 +3,7 @@ import { URLSearchParams } from "url";
 import fs from "fs";
 import { wrapper as axiosCookieJarSupport } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
+import { MultiBar, Presets } from 'cli-progress';
 
 // Create a dedicated axios instance with cookie jar support
 const cookieJar = new CookieJar();
@@ -51,7 +52,7 @@ async function fetchEventsNear(page: number): Promise<FetlifeEvent[]> {
 		const response = await axiosInstance.get('/events/near', {
 			params: {
 				page,
-				'categories[]': 'bdsm_party',
+        // category: 'social',
 				mapbox_location_id: 'locality.510541',
 				'search[long]': 2.383964,
 				'search[lat]': 48.889484,
@@ -99,7 +100,7 @@ async function fetchEventRsvps(eventID: number): Promise<FetlifeUser[]> {
 				"Sec-Fetch-User": "?1",
 				Connection: "keep-alive",
 				Cookie:
-					"language=en; _cfuvid=bGHXyKTYlobwXS_7t6yMj6Y8qgNdotK9Nc6mLLi2PSA-1736477463445-0.0.1.1-604800000; fetlife_pwa=none; _fl_sessionid=653d1fd8dcdb09797e3de869763d5a7b; __cf_bm=NFK4ONvbhGa.sSZ.Quz_OEONDBz3uq6kxVlH.lEIlLE-1736477463-1.0.1.1-SqhiEvO3opeOXClz56lvLts6WedZBIC4FmMq2YprsTr62htULj1R9nPi9Mru0oXwfoKLXe8DbokpPDZsrUUo0Z9kVLwUesWoGZB4EDRA7ss; cf_clearance=RrdV0ivIzVrhanYjA1KvjY2Hfeu_miH2CGp9qCyN15Q-1736477464-1.2.1.1-RD7FoF1xDCGxosBpHcrplmoCG3F65zcgraUh7GtgU6hyqzASW1aDOm4x_0F3uG9LUoFDAgX.7281oiMgpIm_12E1YqxoH8QtmIxydbr31VON_.GxuWZOvRE_hIMGNGoEnwH3LDMw6K_OuQQkWCm2Uhb6OI3YGzoGkUx_KmIKYkvLTg427FX.pH.A7E.rtxQpwe_wKVoPOEHqY27WnAJ43g4BNi_wVt4zmIYPEGIOYnPsCxDV0IaHt_eZDyqOMFShlHVJrwqrnPB0Yk7eqnab1hfEVBJL3Tel9sQi2U0rm2DqsiXG4BiLEteNr_pFVwu7mlB73Drymmoo2Td5h2Rfhw; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3lNRGd3TkRjd05WMHNJaVF5WVNReE1pUTFUM052T0VsSlZVUnVhVkI0ZWs4dk5tNXhMbTVsSWl3aU1UY3pOalEzTnpRNE15NDNOakEzTWpNMElsMD0iLCJleHAiOiIyMDI1LTAxLTI0VDAyOjUxOjIzLjc2MFoiLCJwdXIiOiJjb29raWUucmVtZW1iZXJfdXNlcl90b2tlbiJ9fQ%3D%3D--07fb71169dd175450bf671260464ef82e3a698db",
+					"language=en; _cfuvid=bGHXyKTYlobwXS_7t6yMj6Y8qgNdotK9Nc6mLLi2PSA-1736477463445-0.0.1.1-604800000; fetlife_pwa=none; __cf_bm=NFK4ONvbhGa.sSZ.Quz_OEONDBz3uq6kxVlH.lEIlLE-1736477463-1.0.1.1-SqhiEvO3opeOXClz56lvLts6WedZBIC4FmMq2YprsTr62htULj1R9nPi9Mru0oXwfoKLXe8DbokpPDZsrUUo0Z9kVLwUesWoGZB4EDRA7ss; cf_clearance=RrdV0ivIzVrhanYjA1KvjY2Hfeu_miH2CGp9qCyN15Q-1736477464-1.2.1.1-RD7FoF1xDCGxosBpHcrplmoCG3F65zcgraUh7GtgU6hyqzASW1aDOm4x_0F3uG9LUoFDAgX.7281oiMgpIm_12E1YqxoH8QtmIxydbr31VON_.GxuWZOvRE_hIMGNGoEnwH3LDMw6K_OuQQkWCm2Uhb6OI3YGzoGkUx_KmIKYkvLTg427FX.pH.A7E.rtxQpwe_wKVoPOEHqY27WnAJ43g4BNi_wVt4zmIYPEGIOYnPsCxDV0IaHt_eZDyqOMFShlHVJrwqrnPB0Yk7eqnab1hfEVBJL3Tel9sQi2U0rm2DqsiXG4BiLEteNr_pFVwu7mlB73Drymmoo2Td5h2Rfhw; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3lNRGd3TkRjd05WMHNJaVF5WVNReE1pUTFUM052T0VsSlZVUnVhVkI0ZWs4dk5tNXhMbTVsSWl3aU1UY3pOalEzTnpRNE15NDNOakEzTWpNMElsMD0iLCJleHAiOiIyMDI1LTAxLTI0VDAyOjUxOjIzLjc2MFoiLCJwdXIiOiJjb29raWUucmVtZW1iZXJfdXNlcl90b2tlbiJ9fQ%3D%3D--07fb71169dd175450bf671260464ef82e3a698db",
 			},
 		});
 
@@ -178,22 +179,38 @@ export async function fetchRSVPfromAllParisEvents() {
 		}
 
 		const eventItems: item[] = [];
-console.log("looking for rsvps to all events")
+		console.log("looking for rsvps to all events : " + allEvents.length + " events");
+
+		// Initialize the progress bar
+		const progressBar = new MultiBar({
+			clearOnComplete: false,
+			hideCursor: true,
+			format: 'Fetching RSVPs |{bar}| {percentage}% | {value}/{total} Events',
+		}, Presets.shades_classic);
+
+		const bar = progressBar.create(allEvents.length, 0);
+
 		for (const event of allEvents) {
 			const item: item = {
 				event: event,
-				rsvp: []
+				rsvp: [],
 			};
 			const eventID = event.id; // Assuming each event object has an 'id' property
 			const usernames = await fetchEventRsvps(eventID);
 			item.rsvp = usernames;
 			eventItems.push(item);
+
+			// Update the progress bar
+			bar.increment();
 		}
-    console.log("fetlife refresh done")
-    return eventItems;
+
+		progressBar.stop();
+
+		console.log("fetlife refresh done");
+		return eventItems;
 	} catch (error) {
 		console.error("Error fetching the login page:", (error as Error).message);
-    return null;
+		return null;
 	}
 }
 
