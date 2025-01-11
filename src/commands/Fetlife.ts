@@ -276,7 +276,7 @@ const fetlifeCommand: ChatInputCommand = {
 		.addSubcommand((subcommand) => subcommand.setName("revoke").setDescription("Revoke your Fetlife account link")),
 	global: false,
 
-	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction|null) {
+	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
 		const subcommand = interaction!.options.getSubcommand();
 		console.log(`Executing subcommand: ${subcommand}`);
 
