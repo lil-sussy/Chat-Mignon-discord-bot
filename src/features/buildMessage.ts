@@ -3,6 +3,13 @@ import clientConfig from "../config.json"; // Ensure you import the config
 import ExtendedClient from "../classes/Client";
 
 /**
+ * Escapes markdown characters in a string to prevent formatting issues in Discord.
+ */
+function escapeMarkdown(text: string): string {
+	return text.replace(/([\\_*~`|])/g, '\\$1');
+}
+
+/**
  * Replaces all "\cat\" (and optional "\ccat\") tokens with random cat emojis
  * from the config's catEmojis array. Also replaces pronouns based on the target's roles.
  */
@@ -10,13 +17,15 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 	// Replace \cat\ with single cat emoji
 	const pattern = /\\cat\\/g;
 	let newText = message.replace(pattern, () => {
-		return catEmojis[Math.floor(Math.random() * catEmojis.length)];
+		const randomCatEmoji = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+		return escapeMarkdown(randomCatEmoji);
 	});
 
 	// Optionally replace \ccat\ with some variant
 	const ccatPattern = /\\ccat\\/g;
 	newText = newText.replace(ccatPattern, () => {
-		return catEmojis[Math.floor(Math.random() * catEmojis.length)];
+		const randomCatEmoji = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+		return escapeMarkdown(randomCatEmoji);
 	});
 
 	if (target) {
@@ -51,15 +60,15 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
  * Extracts pronouns from the target's roles.
  */
 function extractPronounsFromRoles(target: GuildMember): string[] {
-  const roleNames = target.roles.cache.map(role => role.name.toLowerCase());
-  const pronouns = [];
-  roleNames.filter(role => role.includes("it"));
+	const roleNames = target.roles.cache.map(role => role.name.toLowerCase());
+	const pronouns = [];
+	roleNames.filter(role => role.includes("it"));
 
-  if (roleNames.filter(role => role.includes("it")).length > 0) pronouns.push("it", "it", "its");
-  else if (roleNames.filter((role) => role.includes("they")).length > 0) pronouns.push("they", "them", "their");
+	if (roleNames.filter(role => role.includes("it")).length > 0) pronouns.push("it", "it", "its");
+	else if (roleNames.filter((role) => role.includes("they")).length > 0) pronouns.push("they", "them", "their");
 	else if (roleNames.filter((role) => role.includes("she")).length > 0) pronouns.push("she", "her", "her");
 	else if (roleNames.filter((role) => role.includes("he")).length > 0) pronouns.push("he", "him", "his");
 
-  // Prioritize pronouns: it > they > she > he
-  return pronouns.length > 0 ? pronouns : ["they", "them", "their"];
+	// Prioritize pronouns: it > they > she > he
+	return pronouns.length > 0 ? pronouns : ["they", "them", "their"];
 } 
