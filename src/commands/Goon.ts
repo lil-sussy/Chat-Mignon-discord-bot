@@ -167,7 +167,7 @@ export const GoonCommand: Command = {
           return `${hours}${ampm} on ${dayOfWeek} ${day}/${month}`;
         };
 
-        let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention you will know how to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\`;
+        let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention will allow you to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\ :3`;
 
         messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
 
