@@ -109,7 +109,7 @@ export const GoonCommand: Command = {
             messageToSend = `<@${discordId}> just failed \\3dPersonPossessive\\ ~${timeDiffInWeeks} week(s) and ${remainingDays} day(s) rampage \\cat\\! Must have been a relief!! THAT MUST NOT REMAIN UNPUNISHED \\cat\\ \\cat\\`;
           }
         } else {
-          messageToSend = `<@${discordId}> wanted everyoen to know that \\1stPerson\\ has just gooned ! A new new gooning session has been registered \\cat\\`;
+          messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ has just gooned ! A new new gooning session has been registered \\cat\\`;
         }
 
         // Send a message to the configured goon channel
@@ -167,7 +167,7 @@ export const GoonCommand: Command = {
           return `${hours}${ampm} on ${dayOfWeek} ${day}/${month}`;
         };
 
-        let messageToSend = `<@${discordId}> wanted everyone to know that they just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time they gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention you will know how to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\`;
+        let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention you will know how to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\`;
 
         messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
 
