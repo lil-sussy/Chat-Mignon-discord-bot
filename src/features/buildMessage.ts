@@ -1,6 +1,12 @@
 import { GuildMember, Guild } from "discord.js";
 import clientConfig from "../config.json"; // Ensure you import the config
 import ExtendedClient from "../classes/Client";
+import EnglishVerbs, { mergeVerbsData, getConjugation } from 'english-verbs-helper';
+import Irregular from 'english-verbs-irregular/dist/verbs.json';
+import Gerunds from 'english-verbs-gerunds/dist/gerunds.json';
+
+// Use mergeVerbsData to create the correct VerbsInfo structure
+const VerbsData = mergeVerbsData(Irregular, Gerunds);
 
 /**
  * Escapes markdown characters in a string to prevent formatting issues in Discord.
@@ -33,6 +39,20 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 		const firstPersonPronoun = pronouns[0] || "they";
 		const thirdPersonPronoun = pronouns[1] || "them";
 		const thirdPersonPossessivePronoun = pronouns[2] || "their";
+
+		// Regex to find \1stPerson\ followed by a verb/tense
+		const firstPersonPattern = /\\1stPerson\\\s+(\w+)\/(\w+)/gi;
+		newText = newText.replace(firstPersonPattern, (match, verb, tense) => {
+			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 1, {});
+			return `${firstPersonPronoun} ${conjugatedVerb}`;
+		});
+
+		// Regex to find \3dPerson\ followed by a verb/tense
+		const thirdPersonPattern = /\\3dPerson\\\s+(\w+)\/(\w+)/gi;
+		newText = newText.replace(thirdPersonPattern, (match, verb, tense) => {
+			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
+			return `${thirdPersonPronoun} ${conjugatedVerb}`;
+		});
 
 		// Replace \1stPerson\, \3dPerson\, and \3dPersonPossessive\
 		newText = newText.replace(/\\1stPerson\\/g, firstPersonPronoun);

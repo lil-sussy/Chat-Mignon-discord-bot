@@ -109,7 +109,7 @@ export const GoonCommand: Command = {
             messageToSend = `<@${discordId}> just failed \\3dPersonPossessive\\ ~${timeDiffInWeeks} week(s) and ${remainingDays} day(s) rampage \\cat\\! Must have been a relief!! THAT MUST NOT REMAIN UNPUNISHED \\cat\\ \\cat\\`;
           }
         } else {
-          messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ has just gooned ! A new new gooning session has been registered \\cat\\`;
+          messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ be just gooned ! A new new gooning session has been registered \\cat\\`;
         }
 
         // Send a message to the configured goon channel
