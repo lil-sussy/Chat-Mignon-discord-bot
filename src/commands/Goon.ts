@@ -82,10 +82,10 @@ export const GoonCommand: Command = {
 
           if (!lastDate || timeDiffInDays < 2) {
             // Variant 1: small gap
-            messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just gooned \\cat\\ !! \\1stPerson\\ is/are quite horny. \\1stPerson\\ have not registered another goon since ${timeDiffInHours} hours which is insane tbh \\cat\\`;
+            messageToSend = `<@${discordId}> want/past everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! \\1stPerson\\ be/present quite horny. \\1stPerson\\ have/present not registered another goon since ${timeDiffInHours} hours which is insane tbh \\cat\\`;
           } else if (timeDiffInDays < 7) {
             // Variant 2: more than 2 days
-            messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just gooned \\cat\\ !! Do.es \\1stPerson\\ deserve a punishment? \\3dPersonPossessive\\ last goon report was since ${timeDiffInDays} days — \\1stPerson\\ could have done better ?!?!`;
+            messageToSend = `<@${discordId}> want/past everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! Do.es \\1stPerson\\ deserve/present a punishment? \\3dPersonPossessive\\ last goon report was since ${timeDiffInDays} days — \\1stPerson\\ could/present have done better ?!?!`;
           } else {
             // More than a week
             // 1. DM user: inactivity check
@@ -109,7 +109,7 @@ export const GoonCommand: Command = {
             messageToSend = `<@${discordId}> just failed \\3dPersonPossessive\\ ~${timeDiffInWeeks} week(s) and ${remainingDays} day(s) rampage \\cat\\! Must have been a relief!! THAT MUST NOT REMAIN UNPUNISHED \\cat\\ \\cat\\`;
           }
         } else {
-          messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ be just gooned ! A new new gooning session has been registered \\cat\\`;
+          messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ be/past just gooned ! A new new gooning session has been registered \\cat\\`;
         }
 
         // Send a message to the configured goon channel
@@ -167,7 +167,7 @@ export const GoonCommand: Command = {
           return `${hours}${ampm} on ${dayOfWeek} ${day}/${month}`;
         };
 
-        let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention will allow you to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\ :3`;
+        let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ goon/past was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention will allow you to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\ :3`;
 
         messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
 
