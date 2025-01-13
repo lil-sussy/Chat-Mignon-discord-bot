@@ -11,6 +11,12 @@ const messageCreateEvent: Event = {
 		// Ignore bot messages to prevent loops
 		if (message.author.bot) return;
 
+		// Check for x.com links
+		const xComPattern = /https?:\/\/(www\.)?x\.com\/\S*/i;
+		if (xComPattern.test(message.content)) {
+			await message.reply("You've used a link toward an x.com post, please make sure to look if the influencer/poster hasn't made the same post on [bluesky.com](https://bsky.app) and if not use [xcancel.com](https://xcancel.com)");
+		}
+
 		// Match each occurrence of \cat\
 		const catPattern = /\\cat\\/g;
 		const catMatches = message.content.match(catPattern);

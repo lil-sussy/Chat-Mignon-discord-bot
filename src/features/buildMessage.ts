@@ -1,35 +1,50 @@
-import { GuildMember } from "discord.js";
+import { GuildMember, Guild } from "discord.js";
+import clientConfig from "../config.json"; // Ensure you import the config
+import ExtendedClient from "../classes/Client";
 
 /**
  * Replaces all "\cat\" (and optional "\ccat\") tokens with random cat emojis
  * from the config's catEmojis array. Also replaces pronouns based on the target's roles.
  */
-export function buildMessage(target: GuildMember | undefined, message: string, catEmojis: string[]): string {
-  // Replace \cat\ with single cat emoji
-  const pattern = /\\cat\\/g;
-  let newText = message.replace(pattern, () => {
-    return catEmojis[Math.floor(Math.random() * catEmojis.length)];
-  });
+export function buildMessage(guild: Guild, client: ExtendedClient, target: GuildMember | undefined, message: string, catEmojis: string[]): string {
+	// Replace \cat\ with single cat emoji
+	const pattern = /\\cat\\/g;
+	let newText = message.replace(pattern, () => {
+		return catEmojis[Math.floor(Math.random() * catEmojis.length)];
+	});
 
-  // Optionally replace \ccat\ with some variant
-  const ccatPattern = /\\ccat\\/g;
-  newText = newText.replace(ccatPattern, () => {
-    return catEmojis[Math.floor(Math.random() * catEmojis.length)];
-  });
+	// Optionally replace \ccat\ with some variant
+	const ccatPattern = /\\ccat\\/g;
+	newText = newText.replace(ccatPattern, () => {
+		return catEmojis[Math.floor(Math.random() * catEmojis.length)];
+	});
 
-  if (target) {
-    const pronouns = extractPronounsFromRoles(target);
-    const firstPersonPronoun = pronouns[0] || "they";
-    const thirdPersonPronoun = pronouns[1] || "them";
-    const thirdPersonPossessivePronoun = pronouns[2] || "their";
+	if (target) {
+		const pronouns = extractPronounsFromRoles(target);
+		const firstPersonPronoun = pronouns[0] || "they";
+		const thirdPersonPronoun = pronouns[1] || "them";
+		const thirdPersonPossessivePronoun = pronouns[2] || "their";
 
-    // Replace \1stPerson\, \3dPerson\, and \3dPersonPossessive\
-    newText = newText.replace(/\\1stPerson\\/g, firstPersonPronoun);
-    newText = newText.replace(/\\3dPerson\\/g, thirdPersonPronoun);
-    newText = newText.replace(/\\3dPersonPossessive\\/g, thirdPersonPossessivePronoun);
-  }
+		// Replace \1stPerson\, \3dPerson\, and \3dPersonPossessive\
+		newText = newText.replace(/\\1stPerson\\/g, firstPersonPronoun);
+		newText = newText.replace(/\\3dPerson\\/g, thirdPersonPronoun);
+		newText = newText.replace(/\\3dPersonPossessive\\/g, thirdPersonPossessivePronoun);
+	}
 
-  return newText;
+	// Replace all :emotes: with actual emotes from guild or config
+	if (target && target.guild) {
+		newText = newText.replace(/:(\w+):/g, (match, emoteName) => {
+			const guildEmoji = guild.emojis.cache.find((emoji) => emoji.name === emoteName);
+			if (guildEmoji) {
+				return `<:${guildEmoji.name}:${guildEmoji.id}>`; // Construct the emote string manually
+			}
+			// If not found in guild emojis, check for Discord base emotes
+			const baseEmoji = client.emojis.cache.find((emoji) => emoji.name === emoteName);
+			return baseEmoji ? baseEmoji.toString() : match;
+		});
+	}
+
+	return newText;
 }
 
 /**

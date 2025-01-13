@@ -2,6 +2,8 @@ import { ChatInputCommandInteraction, Role, SlashCommandBuilder, TextChannel, Ne
 import ExtendedClient from "../classes/Client";
 import { ChatInputCommand } from "../interfaces";
 import { hasModPermission } from "../features/HasModPermissions";
+import { buildMessage } from "../features/buildMessage";
+import { GuildMember } from "discord.js";
 
 const command: ChatInputCommand = {
 	options: new SlashCommandBuilder()
@@ -14,15 +16,13 @@ const command: ChatInputCommand = {
 		// Check if the user has the moderator role
 		const hasPermission = await hasModPermission(client, interaction);
 		if (!hasPermission) return;
+    const interactionMember = interaction.member instanceof GuildMember ? interaction.member : undefined;
 
 		// Get the message content
 		const message = interaction.options.getString("message", true);
 
 		// Replace every \cat\ with a random cat emoji
-		const pattern = /\\cat\\/g;
-		const updatedMessage = message.replace(pattern, () => {
-			return client.config.catEmojis[Math.floor(Math.random() * client.config.catEmojis.length)];
-		});
+		const updatedMessage = buildMessage(interaction.guild!, client, interactionMember, message, client.config.catEmojis);
 
 		// Ensure the channel is a TextChannel or NewsChannel before sending the message
 		if (interaction.channel instanceof TextChannel || interaction.channel instanceof NewsChannel) {

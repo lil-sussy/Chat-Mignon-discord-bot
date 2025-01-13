@@ -1,8 +1,9 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, NewsChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, GuildMember } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, NewsChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, GuildMember, SlashCommandStringOption } from "discord.js";
 import { Command } from "../interfaces/Command";
 import GoonRecord from "../models/GoonRecord";
 import ExtendedClient from "../classes/Client";
 import { buildMessage } from "../features/buildMessage";
+import { addMonths, addWeeks, addDays, addHours, differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours } from 'date-fns';
 
 export const GoonCommand: Command = {
   options: new SlashCommandBuilder()
@@ -17,11 +18,43 @@ export const GoonCommand: Command = {
       subcommand
         .setName("reset")
         .setDescription("Reset your goon data")
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("nogooning")
+        .setDescription("Start a nogooning session")
+        .addStringOption(option =>
+          option.setName("month")
+            .setDescription("Number of months")
+            .setRequired(false)
+        )
+        .addStringOption(option =>
+          option.setName("week")
+            .setDescription("Number of weeks")
+            .setRequired(false)
+        )
+        .addStringOption(option =>
+          option.setName("day")
+            .setDescription("Number of days")
+            .setRequired(false)
+        )
+        .addStringOption(option =>
+          option.setName("hours")
+            .setDescription("Number of hours")
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName("chastity")
+        .setDescription("Announce the start of a chastity session")
     ),
   global: false,
   async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
     const discordId = interaction.user.id;
     const now = new Date();
+    const interactionMember = interaction.member instanceof GuildMember ? interaction.member : undefined;
+    const guild = interaction.guild;
 
     try {
       const subcommand = interaction.options.getSubcommand();
@@ -85,9 +118,15 @@ export const GoonCommand: Command = {
 
         if (channel && (channel instanceof TextChannel || channel instanceof NewsChannel)) {
           // Use our new buildMessage feature
-          const guildMember = interaction.member instanceof GuildMember ? interaction.member : undefined;
-          const finalMessage = buildMessage(guildMember, messageToSend, client.config.catEmojis);
-          await channel.send(finalMessage);
+          const finalMessage = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
+
+          // Replace every \cat\ with a random cat emoji
+          const pattern = /\\cat\\/g;
+          const parsedMessage = finalMessage.replace(pattern, () => {
+            return client.config.catEmojis[Math.floor(Math.random() * client.config.catEmojis.length)];
+          });
+
+          await channel.send(parsedMessage);
         }
 
         await interaction.reply({ content: "Your goon date has been recorded!", ephemeral: true });
@@ -95,6 +134,51 @@ export const GoonCommand: Command = {
         // Reset logic
         await GoonRecord.deleteOne({ discordId });
         await interaction.reply({ content: "Your goon data has been reset.", ephemeral: true });
+      } else if (subcommand === "nogooning" || subcommand === "chastity") {
+        const existingRecord = await GoonRecord.findOne({ discordId });
+				const lastDate = existingRecord?.lastDate || null;
+        const months = parseInt(interaction.options.getString("month") || "0", 10);
+        const weeks = parseInt(interaction.options.getString("week") || "0", 10);
+        const days = parseInt(interaction.options.getString("day") || "0", 10);
+        const hours = parseInt(interaction.options.getString("hours") || "0", 10);
+
+        const chastityStartDate = now;
+        let chastityTheoryEndDate = addMonths(chastityStartDate, months);
+        chastityTheoryEndDate = addWeeks(chastityTheoryEndDate, weeks);
+        chastityTheoryEndDate = addDays(chastityTheoryEndDate, days);
+        chastityTheoryEndDate = addHours(chastityTheoryEndDate, hours);
+
+        await GoonRecord.findOneAndUpdate(
+          { discordId },
+          { chastityStartDate, chastityTheoryEndDate },
+          { upsert: true, new: true }
+        );
+
+
+        const formatDate = (date: Date) => {
+          let hours = date.getHours();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12; // the hour '0' should be '12'
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const dayOfWeek = date.toLocaleString('en-US', { weekday: 'short' });
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          return `${hours}${ampm} on ${dayOfWeek} ${day}/${month}`;
+        };
+
+        let messageToSend = `<@${discordId}> wanted everyone to know that they just started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time they gooned was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention you will know how to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\`;
+
+        messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
+
+        const chastityChannelId = client.config.chastityChannelID;
+        const channel = await client.channels.fetch(chastityChannelId);
+
+        if (channel && (channel instanceof TextChannel || channel instanceof NewsChannel)) {
+          await channel.send(messageToSend);
+        }
+
+        await interaction.reply({ content: `Your ${subcommand} session has been announced!`, ephemeral: true });
       }
     } catch (error) {
       console.error("Error processing goon command:", error);
