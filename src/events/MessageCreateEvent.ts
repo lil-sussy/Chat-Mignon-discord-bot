@@ -47,9 +47,12 @@ const messageCreateEvent: Event = {
 		if (isFeurEnabled) {
 			const quoiPattern = /quoi(?=\s|$|[^\w])/i;
 			const pourquoiPattern = /pour.*quoi/i;
+			const cestQuoiPattern = /c'est .*? quoi/i;
 
 			if (pourquoiPattern.test(message.content)) {
-				await message.reply("pour feur mec");
+				await message.reply("Pour feur mec");
+			} else if (cestQuoiPattern.test(message.content)) {
+				await message.reply("C'est feur mec");
 			} else if (quoiPattern.test(message.content)) {
 				await message.reply("feur");
 			}
