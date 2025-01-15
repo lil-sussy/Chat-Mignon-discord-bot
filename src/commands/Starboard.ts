@@ -40,13 +40,7 @@ const StarboardCommand: ChatInputCommand = {
     .addSubcommand(sub =>
       sub
         .setName("refresh")
-        .setDescription("Refresh a starboard message using its starboard message ID")
-        .addStringOption(opt =>
-          opt
-            .setName("starboard_message_id")
-            .setDescription("The ID of the starboard message to refresh")
-            .setRequired(true)
-        )
+        .setDescription("Refresh all bot messages in the starboard")
     ) as SlashCommandBuilder,
 
   global: false, // Ensure this is false for guild commands
@@ -128,7 +122,7 @@ const StarboardCommand: ChatInputCommand = {
         break;
       }
       case "refresh": {
-        const starboardMessageId = interaction.options.getString("starboard_message_id", true);
+        // Get the starboard channel from config
         const starboardChannel = client.channels.cache.get(client.config.starboard.channelId) as TextChannel;
         if (!starboardChannel) {
           await interaction.editReply({ content: "Starboard channel not found." });
@@ -136,81 +130,80 @@ const StarboardCommand: ChatInputCommand = {
         }
 
         try {
-          // Fetch the starboard message
-          const starMsg = await starboardChannel.messages.fetch(starboardMessageId);
-          if (!starMsg.embeds.length) {
-            await interaction.editReply({ content: "No embed found on that starboard message." });
-            return;
-          }
-          // Original message ID may be in an embed footer like: "🗿 3 | 123456789012345678"
-          const footerText = starMsg.embeds[0].footer?.text || "";
-          const originalIdMatch = footerText.match(/\|\s*(\d{17,})$/);
-          if (!originalIdMatch) {
-            await interaction.editReply({ content: "Could not locate the original message ID." });
-            return;
-          }
+          // Fetch up to 100 recent messages from the starboard channel
+          const messages = await starboardChannel.messages.fetch({ limit: 100 });
 
-          const originalMsgId = originalIdMatch[1];
-          const allChannels = interaction.guild?.channels.cache.filter((c) => c.isTextBased());
-          let foundMessage;
-          for (const c of allChannels?.values() || []) {
-            try {
-              const chan = c as TextChannel;
-              foundMessage = await chan.messages.fetch(originalMsgId);
-              if (foundMessage) {
-                break;
+          // Loop through each message in the starboard channel
+          for (const message of messages.values()) {
+            // Only process bot messages
+            if (!message.author.bot) continue;
+
+            // Extract the original message ID from embed footer
+            const footerText = message.embeds[0]?.footer?.text || "";
+            const originalIdMatch = footerText.match(/\|\s*(\d{17,})$/);
+            if (!originalIdMatch) continue; // Skip if no original ID
+
+            const originalMsgId = originalIdMatch[1];
+            // Attempt to find the original message across all channels
+            const allChannels = interaction.guild?.channels.cache.filter((c) => c.isTextBased());
+            let foundMessage;
+            for (const c of allChannels?.values() || []) {
+              try {
+                const chan = c as TextChannel;
+                foundMessage = await chan.messages.fetch(originalMsgId);
+                if (foundMessage) break;
+              } catch {
+                // Not in this channel or no permissions
               }
-            } catch {
-              // Not in this channel or no permissions
             }
-          }
-          if (!foundMessage) {
-            await interaction.editReply({ content: "Could not fetch the original message." });
-            return;
-          }
 
-          // Check if the message is from a bot
-          const isBotMessage = foundMessage.author?.bot;
-          let messageContent = foundMessage.content || "no content";
+            if (!foundMessage) continue;
 
-          // If it's a bot message, try to get content from the embed
-          if (isBotMessage && foundMessage.embeds.length > 0) {
-            messageContent = foundMessage.embeds[0].description || "no content";
-          }
-
-          // Create a link to the original message
-          const messageLink = `https://discord.com/channels/${interaction.guild?.id}/${foundMessage.channel.id}/${foundMessage.id}`;
-
-          let replyContent;
-          if (foundMessage.reference?.messageId) {
-            try {
-              const repliedToMsg = await foundMessage.channel.messages.fetch(foundMessage.reference.messageId);
-              replyContent = repliedToMsg.content || "no content";
-            } catch {
-              replyContent = "Could not fetch the replied message.";
+            // If the original message is from a bot, consider the embed content
+            const isBotMessage = foundMessage.author?.bot;
+            let messageContent = foundMessage.content || "no content";
+            if (isBotMessage && foundMessage.embeds.length > 0) {
+              messageContent = foundMessage.embeds[0].description || "no content";
             }
+
+            // Build link to the original message
+            const messageLink = `https://discord.com/channels/${interaction.guild?.id}/${foundMessage.channel.id}/${foundMessage.id}`;
+
+            // Check if the original message is a reply
+            let replyContent;
+            if (foundMessage.reference?.messageId) {
+              try {
+                const repliedToMsg = await foundMessage.channel.messages.fetch(foundMessage.reference.messageId);
+                replyContent = repliedToMsg.content || "no content";
+              } catch {
+                replyContent = "Could not fetch the replied message.";
+              }
+            }
+
+            // Get the display name
+            const member = await interaction.guild!.members.fetch(foundMessage.author.id);
+            const user = foundMessage.author;
+            const userDisplayName = member?.nickname || user?.globalName || user?.username;
+
+            // Rebuild the embed
+            const updatedEmbed = buildStarboardEmbed(
+              foundMessage,
+              userDisplayName ?? "Unknown author",
+              reactionCount(foundMessage, client.config.starboard.emoji),
+              foundMessage.id,
+              messageLink,
+              replyContent
+            );
+
+            // Update the starboard message
+            await message.edit({ embeds: [updatedEmbed] });
           }
 
-          const member = await interaction.guild!.members.fetch(foundMessage.author.id) as GuildMember;
-          const user = foundMessage.author as User;
-					const userDisplayName = member?.nickname || user?.globalName || user?.username;
-
-          // Use the shared embed builder function
-          const updatedEmbed = buildStarboardEmbed(
-            foundMessage,
-            userDisplayName ?? "Unknown author",
-            reactionCount(foundMessage, client.config.starboard.emoji),
-            foundMessage.id,
-            messageLink,
-            replyContent
-          );
-
-          // Edit the existing starboard message
-          await starMsg.edit({ embeds: [updatedEmbed] });
-          await interaction.editReply({ content: "Starboard message refreshed." });
+          // Respond once all messages have been processed
+          await interaction.editReply({ content: "Starboard messages refreshed." });
         } catch (error) {
           console.error(error);
-          await interaction.editReply({ content: "An error occurred refreshing the starboard message." });
+          await interaction.editReply({ content: "An error occurred while refreshing starboard messages." });
         }
         break;
       }
