@@ -1,4 +1,8 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, AttachmentBuilder } from "discord.js";
+/*
+Refactor this code to make it respects ISO standards and clean architecthure standards. 
+It is imperative that you repect the neat logic already implemented. You should value moving code in seperate functions / commenting code over deleting logic
+*/
+import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, AttachmentBuilder, ThreadChannel } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import UserLink from "../models/FetlifeUserLink";
 import { fetchRSVPfromAllParisEvents, fetchEventImage } from "../features/fetchFetlifeEvents";
@@ -6,6 +10,7 @@ import ExtendedClient from "../classes/Client";
 import { cropStringWithEllipses } from "../utils/StringUtils";
 import { hasModPermission } from "../features/HasModPermissions";
 import sharp from "sharp";
+import { logError, logInfo } from "../utils/Logger";
 
 import type { FetlifeEvent, FetlifeUser } from "../features/fetchFetlifeEvents";
 
@@ -19,6 +24,13 @@ enum ThreadAutoArchiveDuration {
 interface item {
 	event: FetlifeEvent;
 	rsvp: FetlifeUser[];
+}
+
+// Define a type for user links if not already defined
+interface UserLinkType {
+	fetlifeID: string;
+	fetlifeUsername: string;
+	discordId: string;
 }
 
 function parseDescription(event: FetlifeEvent): string {
@@ -38,36 +50,23 @@ function formatToDiscordTimestamp(dateString: string): string {
 	return `<t:${Math.floor(date.getTime() / 1000)}>`;
 }
 
-export async function fetchAndMatchUsers(results: item[], userLinks: any[]): Promise<item[]> {
-	const matchedEvents = [];
-	console.log("Matching users with events...");
+async function matchUsersWithEvents(results: item[], userLinks: UserLinkType[]): Promise<item[]> {
+	const matchedEvents: item[] = [];
+	logInfo("Matching users with events...");
 
 	for (const item of results) {
 		const matchedUsers: FetlifeUser[] = [];
-
 		for (const rsvpUser of item.rsvp) {
 			const userLink = userLinks.find((link) => link.fetlifeID === rsvpUser.userID || link.fetlifeUsername?.toLowerCase() === rsvpUser.username?.toLowerCase());
 			if (userLink) {
 				await UserLink.updateOne({ fetlifeUsername: rsvpUser.username }, { $set: { fetlifeID: rsvpUser.userID } });
-
-				const matchedUser: FetlifeUser = {
-					userID: rsvpUser.userID,
-					username: rsvpUser.username,
-					discordId: userLink.discordId,
-				};
-
+				const matchedUser: FetlifeUser = { userID: rsvpUser.userID, username: rsvpUser.username, discordId: userLink.discordId };
 				matchedUsers.push(matchedUser);
-
-				// Update the rsvp list with discordId
 				rsvpUser.discordId = userLink.discordId;
 			}
 		}
-
 		if (matchedUsers.length > 0) {
-			matchedEvents.push({
-				event: item.event,
-				rsvp: matchedUsers,
-			});
+			matchedEvents.push({ event: item.event, rsvp: matchedUsers });
 		}
 	}
 	return matchedEvents;
@@ -100,33 +99,7 @@ export async function updateExistingThreads(forumChannel: ForumChannel, matchedE
 		}
 
 		// 2) Update thread post if event details have changed
-		const threadPost = await existingThread.fetchStarterMessage();
-		if (threadPost && threadPost.author.id === client.user?.id) {
-			try {
-				const imageBuffer = await fetchEventImage(currentItem.event.cover_image);
-				if (imageBuffer) {
-					// Convert the image buffer using sharp
-					const processedImageBuffer = await sharp(imageBuffer)
-						.toFormat("png") // Convert to PNG or any other format if needed
-						.toBuffer();
-
-					const attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
-
-					const updatedEmbed = new EmbedBuilder()
-						.setTitle(currentItem.event.name)
-						.setDescription(parseDescription(currentItem.event))
-						.addFields({ name: "Start Date", value: formatToDiscordTimestamp(currentItem.event.start_date_time), inline: true }, { name: "End Date", value: formatToDiscordTimestamp(currentItem.event.end_date_time), inline: true }, { name: "Location", value: currentItem.event.place.full_name, inline: true }, { name: "Club", value: currentItem.event.location, inline: true })
-						.setColor(client.config.colors.embed);
-
-					await threadPost.edit({
-						files: [attachment],
-						embeds: [updatedEmbed],
-					});
-				}
-			} catch (error) {
-				console.error("Error updating thread post:", error);
-			}
-		}
+		await handleThreadUpdates(existingThread, currentItem, client);
 
 		// 3) Check if new users have registered
 		const botMessages = await existingThread.messages.fetch({ limit: 50 });
@@ -152,6 +125,37 @@ export async function updateExistingThreads(forumChannel: ForumChannel, matchedE
 		}
 	}
 	return untreatedEventIDs;
+}
+
+async function handleThreadUpdates(existingThread: ThreadChannel, currentItem: item, client: ExtendedClient) {
+	try {
+		const imageBuffer = await fetchEventImage(currentItem.event.cover_image);
+		if (imageBuffer) {
+			const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
+			const attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
+
+			const updatedEmbed = new EmbedBuilder()
+				.setTitle(currentItem.event.name)
+				.setDescription(parseDescription(currentItem.event))
+				.addFields(
+					{ name: "Start Date", value: formatToDiscordTimestamp(currentItem.event.start_date_time), inline: true },
+					{ name: "End Date", value: formatToDiscordTimestamp(currentItem.event.end_date_time), inline: true },
+					{ name: "Location", value: currentItem.event.place.full_name, inline: true },
+					{ name: "Club", value: currentItem.event.location, inline: true }
+				)
+				.setColor(client.config.colors.embed);
+
+			const starterMessage = await existingThread.fetchStarterMessage();
+			if (starterMessage) {
+				await starterMessage.edit({
+					files: [attachment],
+					embeds: [updatedEmbed],
+				});
+			}
+		}
+	} catch (error) {
+		logError("Error updating thread post:", error as unknown as string);
+	}
 }
 
 export async function createNewThreads(forumChannel: ForumChannel, untreatedEventIDs: number[], matchedEvents: item[], client: ExtendedClient) {
@@ -210,20 +214,18 @@ export async function createSocialEventPosts(channel: any, munchEvents: item[], 
 	// for (const eventItem of munchEvents) {
 	// 	try {
 	// 		const { embed, attachment } = await createEventEmbedWithImage(eventItem.event, client);
-
 	// 		// Send embed + image
 	// 		const munchMessage = await channel.send({
 	// 			embeds: [embed],
 	// 			files: attachment ? [attachment] : [],
 	// 		});
-
 	// 		// Send user mentions in chunks
 	// 		const userMentions = eventItem.rsvp.map((user) => `<@${user.discordId}>`);
 	// 		const maxMentionsPerMessage = 50;
 	// 		for (let i = 0; i < userMentions.length; i += maxMentionsPerMessage) {
 	// 			const mentionsChunk = userMentions.slice(i, i + maxMentionsPerMessage).join(", ");
 	// 			await channel.reply(
-  //         munchMessage,
+	//         munchMessage,
 	// 				`The following users have mentioned they are going to this event: ${mentionsChunk}\n-# Stop pinging me ? use /fetlife revoke`
 	// 			);
 	// 		}
@@ -233,26 +235,21 @@ export async function createSocialEventPosts(channel: any, munchEvents: item[], 
 	// }
 }
 
-async function createEventEmbedWithImage(event: FetlifeEvent, client: ExtendedClient): Promise<{ embed: EmbedBuilder, attachment?: AttachmentBuilder }> {
+async function createEventEmbedWithImage(event: FetlifeEvent, client: ExtendedClient): Promise<{ embed: EmbedBuilder; attachment?: AttachmentBuilder }> {
 	try {
-    let attachment;
-    if (event.category !== "social") {
-      const imageBuffer = await fetchEventImage(event.cover_image);
-      if (imageBuffer) {
-        const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
-        attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
-      }
-    }
+		let attachment;
+		if (event.category !== "social") {
+			const imageBuffer = await fetchEventImage(event.cover_image);
+			if (imageBuffer) {
+				const processedImageBuffer = await sharp(imageBuffer).toFormat("png").toBuffer();
+				attachment = new AttachmentBuilder(processedImageBuffer, { name: "cover.png" });
+			}
+		}
 
 		const embed = new EmbedBuilder()
 			.setTitle(event.name)
 			.setDescription(parseDescription(event))
-			.addFields(
-				{ name: "Start Date", value: formatToDiscordTimestamp(event.start_date_time), inline: true },
-				{ name: "End Date", value: formatToDiscordTimestamp(event.end_date_time), inline: true },
-				{ name: "Location", value: event.place.full_name, inline: true },
-				{ name: "Club", value: event.location, inline: true }
-			)
+			.addFields({ name: "Start Date", value: formatToDiscordTimestamp(event.start_date_time), inline: true }, { name: "End Date", value: formatToDiscordTimestamp(event.end_date_time), inline: true }, { name: "Location", value: event.place.full_name, inline: true }, { name: "Club", value: event.location, inline: true })
 			.setColor(client.config.colors.embed);
 
 		return { embed, attachment };
@@ -278,7 +275,7 @@ const fetlifeCommand: ChatInputCommand = {
 
 	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
 		const subcommand = interaction!.options.getSubcommand();
-		console.log(`Executing subcommand: ${subcommand}`);
+		logInfo(`Executing subcommand: ${subcommand}`);
 
 		if (subcommand === "refresh") {
 			try {
@@ -291,13 +288,13 @@ const fetlifeCommand: ChatInputCommand = {
 				}
 
 				const results = await fetchRSVPfromAllParisEvents();
-				console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
+				logInfo(`Fetched RSVP results: ${results ? results.length : 0} events`);
 
 				if (results) {
 					const userLinks = await UserLink.find({});
-					console.log(`Fetched user links from DB: ${userLinks.length} users`);
+					logInfo(`Fetched user links from DB: ${userLinks.length} users`);
 
-					const matchedEvents = await fetchAndMatchUsers(results, userLinks);
+					const matchedEvents = await matchUsersWithEvents(results, userLinks);
 
 					// Separate events by category
 					const munchEvents = matchedEvents.filter((e) => e.event.category?.toLowerCase() === "social");
@@ -315,18 +312,18 @@ const fetlifeCommand: ChatInputCommand = {
 					if (normalEvents.length) {
 						const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
 						if (forumChannel && forumChannel instanceof ForumChannel) {
-							console.log(normalEvents.map((e) => e.event.id));
+							logInfo(normalEvents.map((e) => e.event.id).toString());
 							const untreatedEventIDs = await updateExistingThreads(forumChannel, normalEvents, client);
-							console.log(untreatedEventIDs);
+							logInfo(untreatedEventIDs.toString());
 							await createNewThreads(forumChannel, untreatedEventIDs, normalEvents, client);
-							console.log("done refreshing");
+							logInfo("done refreshing");
 						}
 					}
 				}
 
 				await interaction!.editReply({ content: "RSVP list has been successfully refreshed." });
 			} catch (error) {
-				console.error("Error during refresh command execution:", error);
+				logError("Error during refresh command execution:", error as unknown as string);
 				await interaction!.editReply({ content: "An error occurred while refreshing the RSVP list." });
 			}
 		} else if (subcommand === "link") {
