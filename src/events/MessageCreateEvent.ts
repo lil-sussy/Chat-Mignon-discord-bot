@@ -14,13 +14,19 @@ const messageCreateEvent: Event = {
 		// Check for x.com links
 		const xComPattern = /https?:\/\/(www\.)?x\.com\/\S*/i;
 		if (xComPattern.test(message.content)) {
-			await message.reply("You've used a link toward an x.com post, please make sure to look if the influencer/poster hasn't made the same post on [bluesky.com](https://bsky.app), and if not please use [xcancel.com](https://xcancel.com)");
+			await message.reply({
+				content: "You've used a link toward an x.com post, please make sure to look if the influencer/poster hasn't made the same post on [bluesky.com](https://bsky.app), and if not please use [xcancel.com](https://xcancel.com)",
+				allowedMentions: { parse: [] }
+			});
 		}
 
 		// Check for Instagram and Facebook links
 		const instaFbPattern = /https?:\/\/(www\.)?(instagram\.com|facebook\.com)\/\S*/i;
 		if (instaFbPattern.test(message.content)) {
-			await message.reply("Keep Instagram and Facebook posts to a minimum, please read the reason at: https://www.platformer.news/meta-new-trans-guidelines-hate-speech/");
+			await message.reply({
+				content: "Keep Instagram and Facebook posts to a minimum, please read the reason at: https://www.platformer.news/meta-new-trans-guidelines-hate-speech/",
+				allowedMentions: { parse: [] }
+			});
 		}
 
 		// Match each occurrence of \cat\
@@ -36,7 +42,10 @@ const messageCreateEvent: Event = {
 
 			// Check if the channel is a TextChannel or DMChannel before sending
 			if (message.channel instanceof TextChannel || message.channel instanceof DMChannel) {
-				await message.channel.send(catString);
+				await message.channel.send({
+					content: catString,
+					allowedMentions: { parse: [] }
+				});
 			}
 		}
 
