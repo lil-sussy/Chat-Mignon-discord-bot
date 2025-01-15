@@ -19,7 +19,7 @@ function escapeMarkdown(text: string): string {
  * Replaces all "\cat\" (and optional "\ccat\") tokens with random cat emojis
  * from the config's catEmojis array. Also replaces pronouns based on the target's roles.
  */
-export function buildMessage(guild: Guild, client: ExtendedClient, target: GuildMember | undefined, message: string, catEmojis: string[]): string {
+export function buildMessage(guild: Guild, client: ExtendedClient, target: GuildMember | undefined, message: string, catEmojis: string[]): string[] {
 	// Replace \cat\ with single cat emoji
 	const pattern = /\\cat\\/g;
 	let newText = message.replace(pattern, () => {
@@ -73,7 +73,25 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 		});
 	}
 
-	return newText;
+	// Split the message into segments if it exceeds Discord's message length limit
+	const maxLength = 2000;
+	const segments: string[] = [];
+	let currentSegment = '';
+
+	newText.split('\n').forEach(line => {
+		if ((currentSegment + line).length + 1 > maxLength) {
+			segments.push(currentSegment);
+			currentSegment = line;
+		} else {
+			currentSegment += (currentSegment ? '\n' : '') + line;
+		}
+	});
+
+	if (currentSegment) {
+		segments.push(currentSegment);
+	}
+
+	return segments;
 }
 
 /**

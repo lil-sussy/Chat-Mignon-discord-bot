@@ -122,7 +122,7 @@ export const GoonCommand: Command = {
 
           // Replace every \cat\ with a random cat emoji
           const pattern = /\\cat\\/g;
-          const parsedMessage = finalMessage.replace(pattern, () => {
+          const parsedMessage = finalMessage[0].replace(pattern, () => {
             return client.config.catEmojis[Math.floor(Math.random() * client.config.catEmojis.length)];
           });
 
@@ -169,7 +169,7 @@ export const GoonCommand: Command = {
 
         let messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present started a ${subcommand} session until ${formatDate(chastityTheoryEndDate)} :devil: \\cat\\ ${lastDate ? `The last time \\1stPerson\\ goon/past was at ${formatDate(lastDate)}` : ``}. I am sure by bringing this information to your attention will allow you to treat <@${discordId}> accordingly during this time :devil: \\cat\\ \\cat\\ :3`;
 
-        messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis);
+        messageToSend = buildMessage(guild!, client, interactionMember, messageToSend, client.config.catEmojis)[0];
 
         const chastityChannelId = client.config.chastityChannelID;
         const channel = await client.channels.fetch(chastityChannelId);
