@@ -80,10 +80,10 @@ async function getFinalMessages(client: ExtendedClient, interaction: ChatInputCo
  * Fetches and processes a message from a provided link.
  */
 async function fetchMessageFromLink(client: ExtendedClient, interaction: ChatInputCommandInteraction, interactionMember: GuildMember | undefined, messageLink: string): Promise<string[]> {
-	const messageId = extractMessageId(messageLink);
-	const channel = interaction.channel as TextChannel | NewsChannel | ForumChannel | ThreadChannel;
+	const { channelId, messageId } = extractChannelAndMessageId(messageLink);
+	const channel = await client.channels.fetch(channelId) as TextChannel | NewsChannel | ForumChannel | ThreadChannel;
 	if (!channel) {
-		throw new Error("Cannot determine the channel from the interaction.");
+		throw new Error("Cannot determine the channel from the link.");
 	}
 
 	const fetchedMessage = await channel.messages.fetch(messageId);
@@ -113,14 +113,14 @@ async function fetchMessageFromLink(client: ExtendedClient, interaction: ChatInp
 }
 
 /**
- * Extracts the message ID from a given link.
+ * Extracts the channel ID and message ID from a given link.
  */
-function extractMessageId(messageLink: string): string {
-	const messageIdMatch = messageLink.match(/\/(\d+)$/);
-	if (!messageIdMatch) {
+function extractChannelAndMessageId(messageLink: string): { channelId: string, messageId: string } {
+	const match = messageLink.match(/\/(\d+)\/(\d+)\/(\d+)$/);
+	if (!match) {
 		throw new Error("Invalid message link format.");
 	}
-	return messageIdMatch[1];
+	return { channelId: match[2], messageId: match[3] };
 }
 
 /**
