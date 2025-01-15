@@ -5,6 +5,7 @@ import {
   TextChannel,
   User,
   EmbedBuilder,
+  GuildMember
 } from "discord.js";
 import { Event } from "../interfaces/Event";
 import ExtendedClient from "../classes/Client";
@@ -38,6 +39,8 @@ const StarboardEvent: Event = {
     const fetchedMsg = reaction.message;
     const originalId = fetchedMsg.id;
     const messageLink = `https://discord.com/channels/${fetchedMsg.guild?.id}/${fetchedMsg.channel.id}/${originalId}`;
+    const member = user instanceof GuildMember ? user : reaction.message.member as GuildMember;
+    const userDisplayName = member.nickname || reaction.message.member?.user.globalName || reaction.message.member?.user.username;
 
     const recentMessages = await starboardChannel.messages.fetch({ limit: 50 });
     const existingStarboard = recentMessages.find((m) => {
