@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import StarboardSetting from "./models/StarboardSetting";
 import Confession from "./models/Confession"; // for storing confessions
 import { fetchRSVPfromAllParisEvents } from "./features/fetchFetlifeEvents";
-import fetlifeCommand, { fetchAndMatchUsers, updateExistingThreads, createNewThreads } from "./commands/Fetlife"; // Importing necessary functions
+// import fetlifeCommand, { fetchAndMatchUsers, updateExistingThreads, createNewThreads } from "./commands/Fetlife"; // Importing necessary functions
 import GoonCommand from "./commands/Goon";
 import UserLink from "./models/FetlifeUserLink";
 
@@ -53,32 +53,32 @@ async function main() {
 
 	// Schedule the fetlife refresh command to run every hour
 	setInterval(async () => {
-		try {
-			try {
-				const results = await fetchRSVPfromAllParisEvents();
-				console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
+		// try {
+		// 	try {
+		// 		const results = await fetchRSVPfromAllParisEvents();
+		// 		console.log(`Fetched RSVP results: ${results ? results.length : 0} events`);
 
-				if (results) {
-					const userLinks = await UserLink.find({});
-					console.log(`Fetched user links from DB: ${userLinks.length} users`);
+		// 		if (results) {
+		// 			const userLinks = await UserLink.find({});
+		// 			console.log(`Fetched user links from DB: ${userLinks.length} users`);
 
-					const matchedEvents = await fetchAndMatchUsers(results, userLinks);
+		// 			const matchedEvents = await fetchAndMatchUsers(results, userLinks);
 
-					const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
-					if (forumChannel && forumChannel instanceof ForumChannel) {
-						console.log(matchedEvents.map((e) => e.event.id));
-						const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
-						console.log(untreatedEventIDs);
-						await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
-						console.log("done refreshing");
-					}
-				}
-			} catch (error) {
-				console.error("Error during refresh command execution:", error);
-			}
-		} catch (error) {
-			console.error("Error executing scheduled fetlife refresh:", error);
-		}
+		// 			const forumChannel = await client.channels.fetch(client.config.parisEventChannelId);
+		// 			if (forumChannel && forumChannel instanceof ForumChannel) {
+		// 				console.log(matchedEvents.map((e) => e.event.id));
+		// 				const untreatedEventIDs = await updateExistingThreads(forumChannel, matchedEvents, client);
+		// 				console.log(untreatedEventIDs);
+		// 				await createNewThreads(forumChannel, untreatedEventIDs, matchedEvents, client);
+		// 				console.log("done refreshing");
+		// 			}
+		// 		}
+		// 	} catch (error) {
+		// 		console.error("Error during refresh command execution:", error);
+		// 	}
+		// } catch (error) {
+		// 	console.error("Error executing scheduled fetlife refresh:", error);
+		// }
 	}, 600000); // 600000 ms = 10 minutes
 
 	// Function to switch activity
