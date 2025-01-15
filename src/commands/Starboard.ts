@@ -1,12 +1,8 @@
-import {
-  ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  TextChannel,
-  Role
-} from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, Role, GuildMember, User } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
 import ExtendedClient from "../classes/Client";
 import StarboardSetting from "../models/StarboardSetting";
+import { buildStarboardEmbed } from "../events/StarboardEvent";
 
 // ... existing imports (if any) ...
 
@@ -146,7 +142,6 @@ const StarboardCommand: ChatInputCommand = {
             await interaction.editReply({ content: "No embed found on that starboard message." });
             return;
           }
-
           // Original message ID may be in an embed footer like: "🗿 3 | 123456789012345678"
           const footerText = starMsg.embeds[0].footer?.text || "";
           const originalIdMatch = footerText.match(/\|\s*(\d{17,})$/);
@@ -186,42 +181,29 @@ const StarboardCommand: ChatInputCommand = {
           // Create a link to the original message
           const messageLink = `https://discord.com/channels/${interaction.guild?.id}/${foundMessage.channel.id}/${foundMessage.id}`;
 
-          // Update the embed with fresh content, including channel info
-          const updatedEmbed = {
-            color: 0xffd700,
-            author: {
-              name: foundMessage.author?.tag || "Unknown author",
-              icon_url: foundMessage.author?.displayAvatarURL() || "",
-            },
-            description: messageContent,
-            footer: {
-              text: `${client.config.starboard.emoji} ${reactionCount(foundMessage, client.config.starboard.emoji)} | ${foundMessage.id}`,
-            },
-            fields: [
-              {
-                name: "Channel",
-                value: `<#${foundMessage.channel.id}> [Original Message](${messageLink})`,
-                inline: false,
-              },
-            ],
-            timestamp: new Date().toISOString(),
-          } as any; // Cast to "any" to avoid strict type issues with optional fields.
-
-          // Process attachments
-          for (const attach of foundMessage.attachments.values()) {
-            if (attach.contentType?.startsWith("image/")) {
-              // Embed the first image
-              updatedEmbed.image = { url: attach.url };
-            } else if (attach.contentType?.startsWith("video/")) {
-              // Provide a link to the video
-              updatedEmbed.fields.push({
-                name: "Attached Video",
-                value: `[Video Link](${attach.url})`,
-                inline: false,
-              });
+          let replyContent;
+          if (foundMessage.reference?.messageId) {
+            try {
+              const repliedToMsg = await foundMessage.channel.messages.fetch(foundMessage.reference.messageId);
+              replyContent = repliedToMsg.content || "no content";
+            } catch {
+              replyContent = "Could not fetch the replied message.";
             }
-            // If it's a linked embed (e.g., YouTube), do nothing special—it's already in messageContent.
           }
+
+          const member = await interaction.guild!.members.fetch(foundMessage.author.id) as GuildMember;
+          const user = foundMessage.author as User;
+					const userDisplayName = member?.nickname || user?.globalName || user?.username;
+
+          // Use the shared embed builder function
+          const updatedEmbed = buildStarboardEmbed(
+            foundMessage,
+            userDisplayName ?? "Unknown author",
+            reactionCount(foundMessage, client.config.starboard.emoji),
+            foundMessage.id,
+            messageLink,
+            replyContent
+          );
 
           // Edit the existing starboard message
           await starMsg.edit({ embeds: [updatedEmbed] });
