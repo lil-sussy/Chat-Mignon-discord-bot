@@ -21,8 +21,14 @@ const command: ChatInputCommand = {
 		)
 		.addStringOption((option) =>
 			option
-				.setName("message_link")
+				.setName("big_message_link")
 				.setDescription("Link to a text file containing the message.")
+				.setRequired(false)
+		)
+    .addStringOption((option) =>
+			option
+				.setName("reply_to")
+				.setDescription("Link to a message you wish to reply.")
 				.setRequired(false)
 		),
 	global: false, // Ensure this is false for guild commands
@@ -35,6 +41,7 @@ const command: ChatInputCommand = {
 		const interactionMember = interaction.member instanceof GuildMember ? interaction.member : undefined;
 		const message = interaction.options.getString("message");
 		const messageLink = interaction.options.getString("message_link");
+		const replyToLink = interaction.options.getString("reply_to");
 
 		if (!message && !messageLink) {
 			await interaction.reply({
@@ -46,7 +53,7 @@ const command: ChatInputCommand = {
 
 		try {
 			const finalMessages = await getFinalMessages(client, interaction, interactionMember, message, messageLink);
-			await postMessages(interaction, finalMessages);
+			await postMessages(interaction, finalMessages, replyToLink);
 		} catch (error) {
 			console.error("Error processing message command:", error);
 			await interaction.reply({
@@ -124,17 +131,29 @@ function extractChannelAndMessageId(messageLink: string): { channelId: string, m
 }
 
 /**
- * Posts the final messages in the appropriate channel.
+ * Posts the final messages in the appropriate channel, optionally replying to a specific message.
  */
-async function postMessages(interaction: ChatInputCommandInteraction, finalMessages: string[]) {
+async function postMessages(interaction: ChatInputCommandInteraction, finalMessages: string[], replyToLink: string | null) {
 	if (
 		interaction.channel instanceof TextChannel ||
 		interaction.channel instanceof NewsChannel ||
 		interaction.channel instanceof ForumChannel ||
 		interaction.channel instanceof ThreadChannel
 	) {
+		let replyToMessage = null;
+		if (replyToLink) {
+			const { channelId, messageId } = extractChannelAndMessageId(replyToLink);
+			if (channelId !== interaction.channel.id) {
+				throw new Error("The message to reply to must be in the same channel.");
+			}
+			replyToMessage = await interaction.channel.messages.fetch(messageId);
+		}
+
 		for (const segment of finalMessages) {
-			await interaction.channel.send(segment);
+			await interaction.channel.send({
+				content: segment,
+				reply: replyToMessage ? { messageReference: replyToMessage } : undefined,
+			});
 		}
 		await interaction.reply({
 			content: "Your message has been posted in this channel!",
