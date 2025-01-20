@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { Events, MessageReaction, User, TextChannel, DMChannel, PartialMessageReaction, PartialUser } from "discord.js";
 import ExtendedClient from "../classes/Client";
 import ReactionConfig from "../models/ReactionConfig";
+import { extractPronounsFromRoles } from "../features/buildMessage"
 
 import { Event } from '../interfaces';
 
@@ -57,14 +58,22 @@ const messageCreateEvent: Event = {
 			const quoiPattern = /quoi(?=\s|$|[^\w])/i;
 			const pourquoiPattern = /pour.*quoi/i;
 			const cestQuoiPattern = /c'est .*? quoi/i;
+			const memberPromise = message.guild?.members.fetch(message.author);
 
-			if (pourquoiPattern.test(message.content)) {
-				await message.reply("Pour feur mec");
-			} else if (cestQuoiPattern.test(message.content)) {
-				await message.reply("C'est feur mec");
-			} else if (quoiPattern.test(message.content)) {
-				await message.reply("feur");
+			if (memberPromise) {
+				const member = await memberPromise;
+				if (member) {
+					const pronouns = extractPronounsFromRoles(member);
+          if (pourquoiPattern.test(message.content)) {
+            await message.reply(`Pour feur ${pronouns.includes("she") ? "meuf": "mec"}`);
+          } else if (cestQuoiPattern.test(message.content)) {
+            await message.reply(`C'est feur ${pronouns.includes("she") ? "meuf" : "mec"}`);
+          } else if (quoiPattern.test(message.content)) {
+            await message.reply("feur");
+          }
+				}
 			}
+
 		}
 	},
 };

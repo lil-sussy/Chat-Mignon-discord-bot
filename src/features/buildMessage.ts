@@ -97,7 +97,7 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 /**
  * Extracts pronouns from the target's roles.
  */
-function extractPronounsFromRoles(target: GuildMember): string[] {
+export function extractPronounsFromRoles(target: GuildMember): string[] {
 	const roleNames = target.roles.cache.map(role => role.name.toLowerCase());
 	const pronouns = [];
 	roleNames.filter(role => role.includes("it"));
