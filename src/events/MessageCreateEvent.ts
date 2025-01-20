@@ -56,8 +56,8 @@ const messageCreateEvent: Event = {
 
 		if (isFeurEnabled) {
 			const quoiPattern = /quoi(?=\s|$|[^\w])/i;
-			const pourquoiPattern = /pour.*quoi/i;
-			const cestQuoiPattern = /c'est .*? quoi/i;
+			const pourquoiPattern = /pour.{0,10}?quoi/i;
+			const cestQuoiPattern = /c'est.{0,10}?quoi/i;
 			const memberPromise = message.guild?.members.fetch(message.author);
 
 			if (memberPromise) {
