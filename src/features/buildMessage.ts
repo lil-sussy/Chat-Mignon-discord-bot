@@ -37,7 +37,7 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 	if (target) {
 		const pronouns = extractPronounsFromRoles(target);
 		const firstPersonPronoun = pronouns[0] || "they";
-		const thirdPersonPronoun = pronouns[1] || "them";
+		const secondPersonPronoun = pronouns[1] || "them";
 		const thirdPersonPossessivePronoun = pronouns[2] || "their";
 
 		// Regex to find \1stPerson\ followed by a verb/tense
@@ -48,16 +48,23 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 		});
 
 		// Regex to find \3dPerson\ followed by a verb/tense
-		const thirdPersonPattern = /\\3dPerson\\\s+(\w+)\/(\w+)/gi;
+		const secondPersonPattern = /\\2ndPerson\\\s+(\w+)\/(\w+)/gi;
+		newText = newText.replace(secondPersonPattern, (match, verb, tense) => {
+			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
+			return `${secondPersonPronoun} ${conjugatedVerb}`;
+		});
+		// Regex to find \3dPerson\ followed by a verb/tense
+		const thirdPersonPattern = /\\3rdPerson\\\s+(\w+)\/(\w+)/gi;
 		newText = newText.replace(thirdPersonPattern, (match, verb, tense) => {
 			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
-			return `${thirdPersonPronoun} ${conjugatedVerb}`;
+			return `${thirdPersonPattern} ${conjugatedVerb}`;
 		});
 
 		// Replace \1stPerson\, \3dPerson\, and \3dPersonPossessive\
 		newText = newText.replace(/\\1stPerson\\/g, firstPersonPronoun);
-		newText = newText.replace(/\\3dPerson\\/g, thirdPersonPronoun);
-		newText = newText.replace(/\\3dPersonPossessive\\/g, thirdPersonPossessivePronoun);
+		newText = newText.replace(/\\2ndPerson\\/g, secondPersonPronoun);
+		newText = newText.replace(/\\3rdPerson\\/g, thirdPersonPossessivePronoun);
+		newText = newText.replace(/\\3rdPersonPossessive\\/g, thirdPersonPossessivePronoun);
 	}
 
 	// Replace all :emotes: with actual emotes from guild or config

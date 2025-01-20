@@ -11,3 +11,15 @@ export function cropStringWithEllipses(input: string, maxLength: number): string
   }
   return input.substring(0, maxLength - 3) + '...';
 } 
+
+export const formatDate = (date: Date) => {
+	let hours = date.getHours();
+	const ampm = hours >= 12 ? "PM" : "AM";
+	hours = hours % 12;
+	hours = hours ? hours : 12; // the hour '0' should be '12'
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	const dayOfWeek = date.toLocaleString("en-US", { weekday: "short" });
+	const day = date.getDate().toString().padStart(2, "0");
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	return `${hours}${ampm} on ${dayOfWeek} ${day}/${month}`;
+};
