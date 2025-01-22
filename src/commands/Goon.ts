@@ -139,7 +139,7 @@ export const GoonCommand: Command = {
 
           if (!lastDate || timeDiffInDays < 2) {
             // Variant 1: small gap
-            messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! \\1stPerson\\ be/present quite horny. \\1stPerson\\ have/present not registered another goon since ${timeDiffInHours} \\cat\\ Quite a horny specimen :3 I think \\1stPerson\\ need/present you to give \\2ndPerson\\ a hand ! \\cat\\`;
+            messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! \\1stPerson\\ be/present quite horny. \\1stPerson\\ have/present not registered another goon since ${timeDiffInHours} hours \\cat\\ Quite a horny specimen :3 I think \\1stPerson\\ need/present you to give \\2ndPerson\\ a hand ! \\cat\\`;
           } else if (timeDiffInDays < 7) {
             // Variant 2: more than 2 days
             messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! Do.es \\1stPerson\\ deserve/present a punishment? \\3rdPersonPossessive\\ last goon report was since ${timeDiffInDays} days \\1stPerson\\ could/present have done better ?!?!`;
