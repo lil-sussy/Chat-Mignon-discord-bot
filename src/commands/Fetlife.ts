@@ -1,6 +1,14 @@
 /*
-Refactor this code to make it respects ISO standards and clean architecthure standards. 
-It is imperative that you repect the neat logic already implemented. You should value moving code in seperate functions / commenting code over deleting logic
+## Role
+You are an expert senior 10x developer who uses vim.
+
+## Task
+You are tasked to refactor this code to make it respects ISO standards and clean architecthure standards. 
+It is imperative that you repect the neat logic already implemented. 
+
+## important
+You should value moving code in seperate functions / commenting code over deleting logic
+You should move code in seperate functions.
 */
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ForumChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, AttachmentBuilder, ThreadChannel } from "discord.js";
 import { ChatInputCommand } from "../interfaces/Command";
