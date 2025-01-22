@@ -5,6 +5,7 @@ import ExtendedClient from "../classes/Client";
 import { buildMessage } from "../features/buildMessage";
 import { addMonths, addWeeks, addDays, addHours, differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours } from 'date-fns';
 import { formatDate } from "../utils/StringUtils"
+import { computeTimeDifference, applyDurationToDate } from "../utils/TimeUtils";
 
 export const GoonCommand: Command = {
   options: new SlashCommandBuilder()
@@ -134,11 +135,7 @@ async function promptGoonConfirmation(client: ExtendedClient, interaction: ChatI
 function generateGoonMessage(discordId: string, lastDate: Date | null, now: Date): string {
   let messageToSend = "";
   if (lastDate) {
-    const timeDiffInMs = now.getTime() - lastDate.getTime();
-    const timeDiffInHours = Math.floor(timeDiffInMs / (1000 * 60 * 60));
-    const timeDiffInDays = Math.floor(timeDiffInHours / 24);
-    const timeDiffInWeeks = Math.floor(timeDiffInDays / 7);
-    const remainingDays = timeDiffInDays % 7;
+    const { timeDiffInHours, timeDiffInDays, timeDiffInWeeks, remainingDays } = computeTimeDifference(lastDate, now);
 
     if (timeDiffInDays < 2) {
       messageToSend = `<@${discordId}> wanted everyone to know that \\1stPerson\\ just/present gooned \\cat\\ !! \\1stPerson\\ be/present quite horny. \\1stPerson\\ have/present not registered another goon since ${timeDiffInHours} hours \\cat\\ Quite a horny specimen :3 I think \\1stPerson\\ need/present you to give \\2ndPerson\\ a hand ! \\cat\\`;
@@ -176,17 +173,10 @@ async function handleReset(interaction: ChatInputCommandInteraction, discordId: 
 async function handleNogooning(client: ExtendedClient, interaction: ChatInputCommandInteraction, discordId: string, now: Date, guild: any, interactionMember: GuildMember | undefined, subcommand: string) {
   const existingRecord = await GoonRecord.findOne({ discordId });
   const lastDate = existingRecord?.lastDate || null;
-  const months = parseInt(interaction.options.getString("month") || "0", 10);
-  const weeks = parseInt(interaction.options.getString("week") || "0", 10);
-  const days = parseInt(interaction.options.getString("day") || "0", 10);
-  const hours = parseInt(interaction.options.getString("hours") || "0", 10);
   const endSession = interaction.options.getBoolean("end") || false;
 
   const chastityStartDate = now;
-  let chastityTheoryEndDate = addMonths(chastityStartDate, months);
-  chastityTheoryEndDate = addWeeks(chastityTheoryEndDate, weeks);
-  chastityTheoryEndDate = addDays(chastityTheoryEndDate, days);
-  chastityTheoryEndDate = addHours(chastityTheoryEndDate, hours);
+  let chastityTheoryEndDate = applyDurationToDate(chastityStartDate, interaction);
 
   let messageToSend = "";
   if (endSession) {
