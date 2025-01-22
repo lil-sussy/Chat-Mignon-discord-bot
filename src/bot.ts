@@ -86,7 +86,7 @@ async function main() {
 		const activities = [
 			{ name: "/report", type: ActivityType.Listening, status: "online" },
 			{ name: "with your subby asses", type: ActivityType.Playing, status: "idle" },
-			{ name: "/report", type: ActivityType.Listening, status: "online" },
+			{ name: "feur", type: ActivityType.Listening, status: "online" },
 			{ name: "porn content 🔞 for fun", type: ActivityType.Streaming, status: "dnd" },
 			{ name: "/report", type: ActivityType.Listening, status: "online" },
 			{ name: "catgirl vtuber content", type: ActivityType.Streaming, status: "dnd" },

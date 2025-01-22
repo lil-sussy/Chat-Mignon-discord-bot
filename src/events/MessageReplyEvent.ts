@@ -54,26 +54,40 @@ const messageCreateEvent: Event = {
 		const feurConfig = await ReactionConfig.findOne({ reactionName: "feur" });
 		const isFeurEnabled = feurConfig?.enabled;
 
-		if (isFeurEnabled) {
-			const quoiPattern = /quoi(?=\s|$|[^\w])/i;
-			const pourquoiPattern = /pour.{0,10}?quoi/i;
-			const cestQuoiPattern = /c'est.{0,10}?quoi/i;
-			const memberPromise = message.guild?.members.fetch(message.author);
+    const messageTest = message.content.toLowerCase()
 
+		if (isFeurEnabled) {
+			const quoi = /q\s*u\s*o\s*i|k\s*o\s*i/i;
+			const qui = /q\s*u\s*i|k\s*i/i;
+			const pour = /p\s*o\s*u\s*r/i;
+			const cest = /c\s*('|'?)?\s*e\s*s\s*t|c(?=\s|$)/i;
+			const pourquoiPattern = new RegExp(`${pour.source}.{0,15}?${quoi.source}`, 'i');
+			const pourquiPattern = new RegExp(`${pour.source}.{0,15}?${qui.source}`, "i");
+			const pourquoiVerbPattern = new RegExp(`${pour.source}${quoi.source}\\s(\\w+)\\s`, "i");
+			const pourVerbQuoiPattern = new RegExp(`${pour.source}\\s(\\w+)\\s${quoi.source}`, 'i');
+			const cestQuoiPattern = new RegExp(`${cest.source}.{0,15}?${quoi.source}`, 'i');
+			const quoiPattern = new RegExp(`${quoi.source}(?=\\s|$|[^\\w])`, 'i');
+
+			const memberPromise = message.guild?.members.fetch(message.author);
 			if (memberPromise) {
 				const member = await memberPromise;
 				if (member) {
 					const pronouns = extractPronounsFromRoles(member);
-          if (pourquoiPattern.test(message.content)) {
-            await message.reply(`Pour feur ${pronouns.includes("she") ? "meuf": "mec"}`);
-          } else if (cestQuoiPattern.test(message.content)) {
-            await message.reply(`C'est feur ${pronouns.includes("she") ? "meuf" : "mec"}`);
-          } else if (quoiPattern.test(message.content)) {
-            await message.reply("feur");
-          }
+					const genderedTerm = pronouns.includes("she") ? "meuf" : "mec";
+					const verbMatch = messageTest.match(pourquoiVerbPattern) ?? messageTest.match(pourVerbQuoiPattern);
+					let verb = verbMatch ? (verbMatch.length > 1 ? verbMatch[1] : verbMatch[0]) : "";
+
+					if (pourquoiVerbPattern.test(messageTest) || pourVerbQuoiPattern.test(messageTest)) {
+						await message.reply(`Pour ${verb} feur ${genderedTerm}`);
+					} else if (pourquoiPattern.test(messageTest) || pourquiPattern.test(messageTest)) {
+						await message.reply(`Pour coubeh ${genderedTerm}`);
+					} else if (cestQuoiPattern.test(messageTest)) {
+						await message.reply(`C'est feur ${genderedTerm}`);
+					} else if (quoiPattern.test(messageTest)) {
+						await message.reply("𝓯 𝓮 𝓾 𝓻");
+					}
 				}
 			}
-
 		}
 	},
 };
