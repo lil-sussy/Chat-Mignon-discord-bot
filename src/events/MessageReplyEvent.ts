@@ -61,12 +61,12 @@ const messageCreateEvent: Event = {
 			const qui = /q\s*u\s*i|k\s*i/i;
 			const pour = /p\s*o\s*u\s*r/i;
 			const cest = /c\s*('|'?)?\s*e\s*s\s*t|c(?=\s|$)/i;
-			const pourquoiPattern = new RegExp(`${pour.source}.{0,8}?${quoi.source}`, 'i');
-			const pourquiPattern = new RegExp(`${pour.source}.{0,5}?${qui.source}`, "i");
-			const pourquoiVerbPattern = new RegExp(`${pour.source}${quoi.source}\\s(\\w+)\\s`, "i");
-			const pourVerbQuoiPattern = new RegExp(`${pour.source}\\s(\\w+)\\s${quoi.source}`, 'i');
-			const cestQuoiPattern = new RegExp(`${cest.source}.{0,8}?${quoi.source}`, 'i');
-			const quoiPattern = new RegExp(`${quoi.source}(?=\\s|$|[^\\w])`, 'i');
+			const pourquoiPattern = /p\s*o\s*u\s*r.{0,8}?q\s*u\s*o\s*i|k\s*o\s*i/i;
+			const pourquiPattern = /p\s*o\s*u\s*r.{0,5}?q\s*u\s*i|k\s*i/i;
+			const pourquoiVerbPattern = /p\s*o\s*u\s*rq\s*u\s*o\s*i|k\s*o\s*i\s(\w+)\s/i;
+			const pourVerbQuoiPattern = /p\s*o\s*u\s*r\s(\w+)\sq\s*u\s*o\s*i|k\s*o\s*i/i;
+			const cestQuoiPattern = /c\s*('|'?)?\s*e\s*s\s*t|c(?=\s|$).{0,8}?q\s*u\s*o\s*i|k\s*o\s*i/i;
+			const quoiPattern = /q\s*u\s*o\s*i|k\s*o\s*i(?=\s|$|[^\w])/i;
 
 			const memberPromise = message.guild?.members.fetch(message.author);
 			if (memberPromise) {
