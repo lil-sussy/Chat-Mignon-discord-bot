@@ -61,11 +61,11 @@ const messageCreateEvent: Event = {
 			const qui = /q\s*u\s*i|k\s*i/i;
 			const pour = /p\s*o\s*u\s*r/i;
 			const cest = /c\s*('|'?)?\s*e\s*s\s*t|c(?=\s|$)/i;
-			const pourquoiPattern = /p\s*o\s*u\s*r.{0,8}?q\s*u\s*o\s*i|k\s*o\s*i/i;
-			const pourquiPattern = /p\s*o\s*u\s*r.{0,5}?q\s*u\s*i|k\s*i/i;
-			const pourquoiVerbPattern = /p\s*o\s*u\s*rq\s*u\s*o\s*i|k\s*o\s*i\s(\w+)\s/i;
-			const pourVerbQuoiPattern = /p\s*o\s*u\s*r\s(\w+)\sq\s*u\s*o\s*i|k\s*o\s*i/i;
-			const cestQuoiPattern = /c\s*('|'?)?\s*e\s*s\s*t|c(?=\s|$).{0,8}?q\s*u\s*o\s*i|k\s*o\s*i/i;
+			const pourquoiPattern = /p\s*o\s*u\s*r.{0,8}?(q\s*u\s*o\s*i|k\s*o\s*i)/i;
+			const pourquiPattern = /p\s*o\s*u\s*r.{0,5}?(q\s*u\s*i|k\s*i)/i;
+			const pourquoiVerbPattern = /(p\s*o\s*u\s*r\s*q\s*u\s*o\s*i|p\s*o\s*u\s*r\s*k\s*o\s*i)\s(\w+)/i;
+			const pourVerbQuoiPattern = /p\s*o\s*u\s*r\s(\w+)\s(q\s*u\s*o\s*i|k\s*o\s*i)/i;
+			const cestQuoiPattern = /(c\s*('|'?)?\s*e\s*s\s*t|c(?=\s)).{0,8}?(q\s*u\s*o\s*i|k\s*o\s*i)/i;
 			const quoiPattern = /q\s*u\s*o\s*i|k\s*o\s*i(?=\s|$|[^\w])/i;
 
 			const memberPromise = message.guild?.members.fetch(message.author);
