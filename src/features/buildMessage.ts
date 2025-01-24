@@ -43,22 +43,8 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 		const firstPersonPattern = new RegExp(`${replacers.they.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
     
 		newText = newText.replace(firstPersonPattern, (match, verb, tense) => {
-			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 1, {});
+			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
 			return `${firstPersonPronoun} ${conjugatedVerb}`;
-		});
-
-		// Regex to find \2ndPerson\ followed by a verb/tense
-		const secondPersonPattern = new RegExp(`${replacers.them.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
-		newText = newText.replace(secondPersonPattern, (match, verb, tense) => {
-			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
-			return `${secondPersonPronoun} ${conjugatedVerb}`;
-		});
-
-		// Regex to find \3rdPerson\ followed by a verb/tense
-		const thirdPersonPattern = new RegExp(`${replacers.their.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
-		newText = newText.replace(thirdPersonPattern, (match, verb, tense) => {
-			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
-			return `${thirdPersonPossessivePronoun} ${conjugatedVerb}`;
 		});
 
 		// Replace \1stPerson\, \2ndPerson\, and \3rdPersonPossessive\
