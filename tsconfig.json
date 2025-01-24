@@ -2,12 +2,12 @@
     "compilerOptions": {
         "module": "CommonJS",
         "moduleResolution": "Node",
-        "rootDir": "./src/",
+        "rootDir": "src/",
         "target": "ES6",
         "typeRoots": [
             "node_modules/@types"
         ],
-        "outDir": "./dist/",
+        "outDir": "dist/",
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "experimentalDecorators": true,
@@ -26,6 +26,5 @@
     ],
     "exclude": [
         "node_modules",
-        "dist"
     ]
 }

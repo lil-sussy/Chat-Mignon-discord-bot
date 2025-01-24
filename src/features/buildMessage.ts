@@ -15,21 +15,20 @@ function escapeMarkdown(text: string): string {
 	return text.replace(/([\\_*~`|])/g, '\\$1');
 }
 
+export enum replacers {
+	cat = "\\cat\\",
+	they = "\\1stPerson\\",
+	them = "\\2ndPerson\\",
+	their = "\\3rdPerson\\",
+}
 /**
  * Replaces all "\cat\" (and optional "\ccat\") tokens with random cat emojis
  * from the config's catEmojis array. Also replaces pronouns based on the target's roles.
  */
 export function buildMessage(guild: Guild, client: ExtendedClient, target: GuildMember | undefined, message: string, catEmojis: string[]): string[] {
 	// Replace \cat\ with single cat emoji
-	const pattern = /\\cat\\/g;
+	const pattern = new RegExp(replacers.cat.replace(/\\/g, '\\\\'), 'g');
 	let newText = message.replace(pattern, () => {
-		const randomCatEmoji = catEmojis[Math.floor(Math.random() * catEmojis.length)];
-		return escapeMarkdown(randomCatEmoji);
-	});
-
-	// Optionally replace \ccat\ with some variant
-	const ccatPattern = /\\ccat\\/g;
-	newText = newText.replace(ccatPattern, () => {
 		const randomCatEmoji = catEmojis[Math.floor(Math.random() * catEmojis.length)];
 		return escapeMarkdown(randomCatEmoji);
 	});
@@ -41,30 +40,31 @@ export function buildMessage(guild: Guild, client: ExtendedClient, target: Guild
 		const thirdPersonPossessivePronoun = pronouns[2] || "their";
 
 		// Regex to find \1stPerson\ followed by a verb/tense
-		const firstPersonPattern = /\\1stPerson\\\s+(\w+)\/(\w+)/gi;
+		const firstPersonPattern = new RegExp(`${replacers.they.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
+    
 		newText = newText.replace(firstPersonPattern, (match, verb, tense) => {
 			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 1, {});
 			return `${firstPersonPronoun} ${conjugatedVerb}`;
 		});
 
-		// Regex to find \3dPerson\ followed by a verb/tense
-		const secondPersonPattern = /\\2ndPerson\\\s+(\w+)\/(\w+)/gi;
+		// Regex to find \2ndPerson\ followed by a verb/tense
+		const secondPersonPattern = new RegExp(`${replacers.them.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
 		newText = newText.replace(secondPersonPattern, (match, verb, tense) => {
 			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
 			return `${secondPersonPronoun} ${conjugatedVerb}`;
 		});
-		// Regex to find \3dPerson\ followed by a verb/tense
-		const thirdPersonPattern = /\\3rdPerson\\\s+(\w+)\/(\w+)/gi;
+
+		// Regex to find \3rdPerson\ followed by a verb/tense
+		const thirdPersonPattern = new RegExp(`${replacers.their.replace(/\\/g, '\\\\')}\\s+(\\w+)\\/(\\w+)`, 'gi');
 		newText = newText.replace(thirdPersonPattern, (match, verb, tense) => {
 			const conjugatedVerb = getConjugation(VerbsData, verb, tense.toUpperCase(), 2, {});
-			return `${thirdPersonPattern} ${conjugatedVerb}`;
+			return `${thirdPersonPossessivePronoun} ${conjugatedVerb}`;
 		});
 
-		// Replace \1stPerson\, \3dPerson\, and \3dPersonPossessive\
-		newText = newText.replace(/\\1stPerson\\/g, firstPersonPronoun);
-		newText = newText.replace(/\\2ndPerson\\/g, secondPersonPronoun);
-		newText = newText.replace(/\\3rdPerson\\/g, thirdPersonPossessivePronoun);
-		newText = newText.replace(/\\3rdPersonPossessive\\/g, thirdPersonPossessivePronoun);
+		// Replace \1stPerson\, \2ndPerson\, and \3rdPersonPossessive\
+		newText = newText.replace(new RegExp(replacers.they.replace(/\\/g, '\\\\'), 'g'), firstPersonPronoun);
+		newText = newText.replace(new RegExp(replacers.them.replace(/\\/g, '\\\\'), 'g'), secondPersonPronoun);
+		newText = newText.replace(new RegExp(replacers.their.replace(/\\/g, '\\\\'), 'g'), thirdPersonPossessivePronoun);
 	}
 
 	// Replace all :emotes: with actual emotes from guild or config

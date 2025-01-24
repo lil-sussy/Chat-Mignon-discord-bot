@@ -15,11 +15,15 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
+      // "outFiles": [
+      //   "${workspaceFolder}/dist/**/*.js"
+      // ],
       "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "../../src/*": "${workspaceFolder}/src/*",
+        "*": "*"
+      }
     },
     {
       "type": "node",
@@ -35,9 +39,9 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
+      // "outFiles": [
+      //   "${workspaceFolder}/dist/**/*.js"
+      // ],
       "preLaunchTask": "tsc: build - tsconfig.json",
       "sourceMaps": true,
       "envFile": "${workspaceFolder}/.env"
