@@ -48,40 +48,6 @@
     },
     {
       "type": "node",
-      "request": "launch",
-      "name": "Debug further fetlife test",
-      "program": "${workspaceFolder}/src/tests/fetlifeFuthertest.js",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true,
-      "envFile": "${workspaceFolder}/.env"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug pupeeter fetlife test",
-      "program": "${workspaceFolder}/src/tests/fetlifepuppeteer.js",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true,
-      "envFile": "${workspaceFolder}/.env"
-    },
-    {
-      "type": "node",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "request": "launch",
       "name": "Debug bot TypeScript 2",
@@ -90,6 +56,22 @@
         "${workspaceFolder}/dist/**/*.js"
       ],
       "sourceMaps": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Current File",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "sourceMaps": true,
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ]
     }
   ]
 }
