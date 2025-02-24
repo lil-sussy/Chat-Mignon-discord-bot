@@ -17,21 +17,21 @@ const command: ChatInputCommand = {
 			option
 				.setName("message")
 				.setDescription("The message to post.")
-				.setRequired(false)
+				.setRequired(false),
 		)
 		.addStringOption((option) =>
 			option
 				.setName("big_message_link")
 				.setDescription("Link to a text file containing the message.")
-				.setRequired(false)
+				.setRequired(false),
 		)
     .addStringOption((option) =>
 			option
 				.setName("reply_to")
 				.setDescription("Link to a message you wish to reply.")
-				.setRequired(false)
+				.setRequired(false),
 		),
-	global: false, // Ensure this is false for guild commands
+	global: false,
 
 	async execute(client: ExtendedClient, interaction: ChatInputCommandInteraction) {
 		// Check if the user has the moderator role
@@ -40,7 +40,7 @@ const command: ChatInputCommand = {
 
 		const interactionMember = interaction.member instanceof GuildMember ? interaction.member : undefined;
 		const message = interaction.options.getString("message");
-		const messageLink = interaction.options.getString("message_link");
+    const messageLink = interaction.options.getString("big_message_link");
 		const replyToLink = interaction.options.getString("reply_to");
 
 		if (!message && !messageLink) {
