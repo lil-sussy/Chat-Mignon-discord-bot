@@ -2,76 +2,36 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug Bot",
       "type": "node",
       "request": "launch",
-      "name": "Debug Bot xd",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "debug:bot"
-      ],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      // "outFiles": [
-      //   "${workspaceFolder}/dist/**/*.js"
-      // ],
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true,
-      "sourceMapPathOverrides": {
-        "../../src/*": "${workspaceFolder}/src/*",
-        "*": "*"
-      }
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug fetlife test",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "debug:fetlife"
-      ],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      // "outFiles": [
-      //   "${workspaceFolder}/dist/**/*.js"
-      // ],
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "sourceMaps": true,
-      "envFile": "${workspaceFolder}/.env"
-    },
-    {
-      "type": "node",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "request": "launch",
-      "name": "Debug bot TypeScript 2",
       "program": "${workspaceFolder}/src/bot.ts",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
-      "sourceMaps": true
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Current File",
-      "program": "${file}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "sourceMaps": true,
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
-      ]
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Debug Manager",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/src/manager.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }
