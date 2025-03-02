@@ -9,6 +9,7 @@ import { Event } from '../interfaces';
 const messageCreateEvent: Event = {
 	name: "messageCreate",
 	async execute(client: ExtendedClient, message: Message) {
+    return;
 		// Ignore bot messages to prevent loops
 		if (message.author.bot) return;
 
